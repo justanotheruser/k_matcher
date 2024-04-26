@@ -23,12 +23,14 @@ flake8-pyproject = "^1.2.3"
 exclude_dirs = [".venv"]
 
 [tool.black]
+line-length = 100
 skip-string-normalization = true
 
 [tool.isort]
 profile = "black"
 
 [tool.flake8]
+max-line-length = 100
 exclude = [
     ".git",
     "__pycache__",
