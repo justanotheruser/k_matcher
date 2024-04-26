@@ -20,7 +20,11 @@ pre-commit = "^3.7.0"
 flake8-pyproject = "^1.2.3"
 
 [tool.bandit]
-exclude_dirs = [".venv"]
+exclude_dirs = [
+    "__pycache__",
+    ".mypy_cache",
+    ".venv"
+]
 
 [tool.black]
 line-length = 100
@@ -34,6 +38,7 @@ max-line-length = 100
 exclude = [
     ".git",
     "__pycache__",
+    ".mypy_cache",
     ".venv"
 ]
 
