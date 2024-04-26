@@ -17,6 +17,7 @@ mypy = "^1.9.0"
 bandit = "^1.7.8"
 pytest = "^8.1.1"
 pre-commit = "^3.7.0"
+flake8-pyproject = "^1.2.3"
 
 [tool.bandit]
 exclude_dirs = [".venv"]
@@ -26,6 +27,13 @@ skip-string-normalization = true
 
 [tool.isort]
 profile = "black"
+
+[tool.flake8]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv"
+]
 
 [build-system]
 requires = ["poetry-core"]
