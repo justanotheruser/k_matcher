@@ -19,6 +19,7 @@ bandit = "^1.7.8"
 pytest = "^8.1.1"
 pre-commit = "^3.7.0"
 flake8-pyproject = "^1.2.3"
+types-pyyaml = "^6.0.12.20240311"
 
 [tool.bandit]
 exclude_dirs = [

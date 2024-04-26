@@ -1,8 +1,8 @@
-from plhdr_project_name.config import Config
+from plhdr_project_name.config import load_config
 
 
 def main():
-    cfg = Config()
+    cfg = load_config("cfg/cfg.yaml")
     print(f"Hello World! Config: {cfg}")
 
 
