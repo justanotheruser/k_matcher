@@ -1,6 +1,7 @@
 import csv
 import os
 from abc import ABC, abstractmethod
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -21,6 +22,7 @@ class Response(BaseModel):
 
 class SurveySubmission(BaseModel):
     responses: list[Response]
+    id: str | None = None
 
 # Repository Layer
 class QuestionRepository(ABC):
@@ -34,7 +36,7 @@ class QuestionRepository(ABC):
 
 class ResponseRepository(ABC):
     @abstractmethod
-    def save_response(self, response: SurveySubmission) -> bool:
+    def save_response(self, response: SurveySubmission) -> str:
         pass
     
     @abstractmethod
@@ -84,11 +86,15 @@ class CSVQuestionRepository(QuestionRepository):
 
 class InMemoryResponseRepository(ResponseRepository):
     def __init__(self):
-        self.responses = []
+        self.responses: dict[str, SurveySubmission] = {}
     
-    def save_response(self, response: SurveySubmission) -> bool:
-        self.responses.append(response)
-        return True
+    def save_response(self, submission: SurveySubmission) -> str:
+        submission_id = str(uuid4())
+        self.responses[submission_id] = SurveySubmission(
+            responses=submission.responses, 
+            id=submission_id
+        )
+        return submission_id
     
     def get_all_responses(self) -> list[SurveySubmission]:
         return self.responses
@@ -120,11 +126,8 @@ async def submit_survey(submission: SurveySubmission):
             raise HTTPException(status_code=400, 
                               detail=f"Question with ID {response.question_id} not found")
     
-    success = response_repo.save_response(submission)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to save response")
-    
-    return {"status": "success"}
+    submission_id = response_repo.save_response(submission)
+    return {"status": "success", "submission_id": submission_id}
 
 # HTML for the frontend
 @app.get("/", response_class=HTMLResponse)
@@ -184,7 +187,7 @@ async def get_html():
         </style>
     </head>
     <body>
-        <h1>Sociological Survey</h1>
+        <h1>Опросник</h1>
         
         <div id="survey-container">
             <div id="questions-container"></div>
@@ -192,7 +195,8 @@ async def get_html():
         </div>
         
         <div id="thank-you" class="hidden">
-            <h2>Thank you for completing the survey!</h2>
+            <h2><div id="your-code">Ваш код: </div></h2>
+            Передайте его партнёру для прохождения опроса и поиска совпадений
         </div>
         
         <script>
@@ -282,6 +286,9 @@ async def get_html():
                     });
                     
                     if (response.ok) {
+                        const data = await response.json()
+                        console.log(data['submission_id'])
+                        document.getElementById('your-code').textContent += data['submission_id']
                         document.getElementById('survey-container').classList.add('hidden');
                         document.getElementById('thank-you').classList.remove('hidden');
                     } else {

@@ -5,16 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "main",
+            "name": "Debugger: FastAPI",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "python": "${workspaceFolder}/app/.venv/bin/python",
-            "program": "app/plhdr_project_name/main.py",
-            "args": [],
-            "console": "integratedTerminal",
-            "consoleTitle": "main",
-            "justMyCode": false
+            "module": "uvicorn",
+            "args": [
+                "k_matcher.main:app",
+                "--reload"
+            ],
+            "jinja": false
         },
         {
             "name": "tests",
@@ -26,18 +25,6 @@
             "console": "integratedTerminal",
             "consoleTitle": "tests",
             "justMyCode": false
-        },
-        {
-            "name": "test_one",
-            "type": "debugpy",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/app",
-            "python": "${workspaceFolder}/app/.venv/bin/python",
-            "module": "pytest",
-            "args": ["tests/test_one.py"],
-            "console": "integratedTerminal",
-            "consoleTitle": "test_one",
-            "justMyCode": false
-        },
+        }
     ]
 }
