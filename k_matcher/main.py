@@ -2,6 +2,7 @@ import csv
 import os
 from abc import ABC, abstractmethod
 from uuid import uuid4
+from enum import StrEnum
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -16,9 +17,17 @@ class Question(BaseModel):
     question: str
     description: str
 
+
+class Answer(StrEnum):
+    GIVE = "give"
+    RECEIVE = "receive"
+    EITHER = "either"
+    NOPE = "nope"
+
+
 class Response(BaseModel):
     question_id: int
-    answer: bool  # True for Yes, False for No
+    answer: Answer
 
 class SurveySubmission(BaseModel):
     responses: list[Response]
@@ -51,7 +60,7 @@ class ResponseRepository(ABC):
 class CSVQuestionRepository(QuestionRepository):
     def __init__(self, csv_file_path: str):
         self.csv_file_path = csv_file_path
-        self._ensure_csv_exists()
+        #self._ensure_csv_exists()
         
     def _ensure_csv_exists(self):
         """Create a sample CSV file if it doesn't exist"""
@@ -161,17 +170,22 @@ async def submit_survey(submission: SurveySubmission, code: str | None):
 
 
 def find_matches(first_submission: SurveySubmission, second_submission: SurveySubmission) -> list[int]:
-    first_submission_yes = set(
-        question.question_id
-        for question in first_submission.responses
-        if question.answer
-    )
-    second_submission_yes = set(
-        question.question_id
-        for question in second_submission.responses
-        if question.answer 
-    )
-    return list(first_submission_yes.intersection(second_submission_yes))
+    def filter_answers(responses: list[Response], answer: Answer) -> set[int]:
+        return set(
+            question.question_id
+            for question in responses
+            if question.answer in [answer, Answer.EITHER]
+        )
+    
+    first_give = filter_answers(first_submission.responses, Answer.GIVE)
+    second_receive = filter_answers(second_submission.responses, Answer.RECEIVE)
+    first_give_second_receive = first_give.intersection(second_receive)
+
+    first_receive = filter_answers(first_submission.responses, Answer.RECEIVE)
+    second_give = filter_answers(second_submission.responses, Answer.GIVE)
+    first_receive_second_give = first_receive.intersection(second_give)
+
+    return list(first_give_second_receive.union(first_receive_second_give))
         
 
 @app.get("api/survey/{survey_id}")
@@ -303,17 +317,27 @@ async def get_html():
                     const optionsDiv = document.createElement('div');
                     optionsDiv.className = 'options';
                     
-                    const yesBtn = document.createElement('button');
-                    yesBtn.textContent = 'Yes';
-                    yesBtn.onclick = () => selectAnswer(question.id, true, yesBtn, noBtn);
+                    const giveBtn = document.createElement('button');
+                    giveBtn.textContent = 'Give';
+                    giveBtn.onclick = () => selectAnswer(question.id, 'give', giveBtn, [receiveBtn, eitherBtn, nopeBtn]);
                     
-                    const noBtn = document.createElement('button');
-                    noBtn.textContent = 'No';
-                    noBtn.onclick = () => selectAnswer(question.id, false, noBtn, yesBtn);
+                    const receiveBtn = document.createElement('button');
+                    receiveBtn.textContent = 'Receive';
+                    receiveBtn.onclick = () => selectAnswer(question.id, 'receive', receiveBtn, [giveBtn, eitherBtn, nopeBtn]);
+
+                    const eitherBtn = document.createElement('button');
+                    eitherBtn.textContent = 'Either/Both';
+                    eitherBtn.onclick = () => selectAnswer(question.id, 'either', eitherBtn, [giveBtn, receiveBtn, nopeBtn]);
                     
-                    optionsDiv.appendChild(yesBtn);
-                    optionsDiv.appendChild(noBtn);
+                    const nopeBtn = document.createElement('button');
+                    nopeBtn.textContent = 'Nope';
+                    nopeBtn.onclick = () => selectAnswer(question.id, 'nope', nopeBtn, [giveBtn, receiveBtn, eitherBtn]);
                     
+                    optionsDiv.appendChild(giveBtn);
+                    optionsDiv.appendChild(receiveBtn);
+                    optionsDiv.appendChild(eitherBtn);
+                    optionsDiv.appendChild(nopeBtn);
+
                     questionDiv.appendChild(titleDiv);
                     questionDiv.appendChild(descriptionDiv);
                     questionDiv.appendChild(optionsDiv);
@@ -348,14 +372,17 @@ async def get_html():
             }
 
             // Handle answer selection
-            function selectAnswer(questionId, answer, selectedBtn, otherBtn) {
+            function selectAnswer(questionId, answer, selectedBtn, otherBtns) {
                 answers[questionId] = answer;
                 
                 selectedBtn.style.backgroundColor = '#4CAF50';
                 selectedBtn.style.color = 'white';
                 
-                otherBtn.style.backgroundColor = '';
-                otherBtn.style.color = '';
+                otherBtns.forEach(btn => {
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                })
+                
                 
                 // Enable submit button if all questions are answered
                 if (Object.keys(answers).length === questions.length) {
