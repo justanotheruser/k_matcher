@@ -22,6 +22,7 @@ class Response(BaseModel):
 
 class SurveySubmission(BaseModel):
     responses: list[Response]
+    matching_question_ids: list[int] = []
     id: str | None = None
 
 # Repository Layer
@@ -39,6 +40,10 @@ class ResponseRepository(ABC):
     def save_response(self, response: SurveySubmission) -> str:
         pass
     
+    @abstractmethod
+    def get_response(self, _id: str) -> SurveySubmission | None:
+        pass
+
     @abstractmethod
     def get_all_responses(self) -> list[SurveySubmission]:
         pass
@@ -96,6 +101,9 @@ class InMemoryResponseRepository(ResponseRepository):
         )
         return submission_id
     
+    def get_response(self, _id: str) -> SurveySubmission | None:
+        return self.responses.get(_id)
+
     def get_all_responses(self) -> list[SurveySubmission]:
         return self.responses
 
@@ -118,16 +126,57 @@ async def get_question(question_id: int):
         raise HTTPException(status_code=404, detail="Question not found")
     return question
 
+@app.get("/api/{code}")
+async def check_survey(code: str):
+    submission = response_repo.get_response(code)
+    if not submission:
+        return {"status": "not_found"}
+    if not submission.matching_question_ids:
+        return {"status": "not_ready"}
+    questions = [question_repo.get_question_by_id(question_id) for question_id in submission.matching_question_ids]
+    return {"status": "ready", "matches": questions}
+
+
 @app.post("/api/submit-survey")
-async def submit_survey(submission: SurveySubmission):
+async def submit_survey(submission: SurveySubmission, code: str | None):
     # Validate that all questions exist
     for response in submission.responses:
         if not question_repo.get_question_by_id(response.question_id):
             raise HTTPException(status_code=400, 
                               detail=f"Question with ID {response.question_id} not found")
     
-    submission_id = response_repo.save_response(submission)
-    return {"status": "success", "submission_id": submission_id}
+    if code and code != "":
+        first_submission = response_repo.get_response(code)
+        if first_submission is None:
+            submission_id = response_repo.save_response(submission)
+            return {"status": "code_not_found", "submission_id": submission_id}
+        else:
+            question_ids = find_matches(first_submission, submission)
+            response_repo.responses[code].matching_question_ids = question_ids
+            questions = [question_repo.get_question_by_id(question_id) for question_id in question_ids]
+            return {"status": "matching_completed", "matches": questions}
+    else:  
+        submission_id = response_repo.save_response(submission)
+        return {"status": "saved", "submission_id": submission_id}
+
+
+def find_matches(first_submission: SurveySubmission, second_submission: SurveySubmission) -> list[int]:
+    first_submission_yes = set(
+        question.question_id
+        for question in first_submission.responses
+        if question.answer
+    )
+    second_submission_yes = set(
+        question.question_id
+        for question in second_submission.responses
+        if question.answer 
+    )
+    return list(first_submission_yes.intersection(second_submission_yes))
+        
+
+@app.get("api/survey/{survey_id}")
+async def survey_result(survey_id: str):
+    response_repo.get_all_responses
 
 # HTML for the frontend
 @app.get("/", response_class=HTMLResponse)
@@ -147,6 +196,12 @@ async def get_html():
                 padding: 20px;
             }
             .question-container {
+                margin-bottom: 20px;
+                padding: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+            }
+            .matching-result-container {
                 margin-bottom: 20px;
                 padding: 15px;
                 border: 1px solid #ddd;
@@ -181,6 +236,9 @@ async def get_html():
                 background-color: #cccccc;
                 cursor: not-allowed;
             }
+            #code-not-found {
+                color: red;
+            }
             .hidden {
                 display: none;
             }
@@ -188,16 +246,27 @@ async def get_html():
     </head>
     <body>
         <h1>Опросник</h1>
-        
+
         <div id="survey-container">
+            <div>
+                <label for="code">Код для сравнения:</label>
+                <input type="text" id="code" name="code">
+            </div>
+            <button id="check-btn">Проверить</button>
             <div id="questions-container"></div>
             <button id="submit-btn" disabled>Submit Survey</button>
         </div>
         
+        <div id="code-not-found" class="hidden">
+            <h3>Введённый код не найден</h3>
+        </div>
+
         <div id="thank-you" class="hidden">
             <h2><div id="your-code">Ваш код: </div></h2>
             Передайте его партнёру для прохождения опроса и поиска совпадений
         </div>
+
+        <div id="matching-result-container" class="hidden" ></div>
         
         <script>
             let questions = [];
@@ -253,6 +322,31 @@ async def get_html():
                 });
             }
             
+            function renderMatchingResult() {
+                const container = document.getElementById('matching-result-container');
+                
+                questions.forEach(question => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'question-container';
+                    questionDiv.setAttribute('data-id', question.id);
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'question-title';
+                    titleDiv.textContent = question.question;
+                    
+                    const descriptionDiv = document.createElement('div');
+                    descriptionDiv.className = 'question-description';
+                    descriptionDiv.textContent = question.description;
+                    
+                    questionDiv.appendChild(titleDiv);
+                    questionDiv.appendChild(descriptionDiv);
+                    container.appendChild(questionDiv);
+                });
+
+                container.classList.remove("hidden")
+                
+            }
+
             // Handle answer selection
             function selectAnswer(questionId, answer, selectedBtn, otherBtn) {
                 answers[questionId] = answer;
@@ -269,6 +363,22 @@ async def get_html():
                 }
             }
             
+            // Check survey
+            async function checkSurvey() {
+                code = document.getElementById('code').value
+                const response = await fetch('/api/' + code)
+                if (response.ok) {
+                    const data = await response.json()
+                    console.log(data)
+                    if (data['status'] == 'ready') {
+                        questions = data['matches']
+                        renderMatchingResult()
+                    } else {
+                        alert("Пока нет двух результатов для этого кода")
+                    }
+                }
+            }
+
             // Submit survey
             async function submitSurvey() {
                 const responses = Object.keys(answers).map(questionId => ({
@@ -277,7 +387,10 @@ async def get_html():
                 }));
                 
                 try {
-                    const response = await fetch('/api/submit-survey', {
+                    code = document.getElementById('code').value
+                    console.log('Code: ' + code)
+                    request_path = '/api/submit-survey?code=' + code
+                    const response = await fetch(request_path, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -287,10 +400,22 @@ async def get_html():
                     
                     if (response.ok) {
                         const data = await response.json()
-                        console.log(data['submission_id'])
-                        document.getElementById('your-code').textContent += data['submission_id']
+                        console.log(data)
                         document.getElementById('survey-container').classList.add('hidden');
-                        document.getElementById('thank-you').classList.remove('hidden');
+                        
+                        if (data['status'] == 'code_not_found') {
+                            document.getElementById('code-not-found').classList.remove('hidden');
+                            document.getElementById('your-code').textContent += data['submission_id']
+                            document.getElementById('thank-you').classList.remove('hidden');
+                        } else if (data['status'] == 'saved') {
+                            document.getElementById('your-code').textContent += data['submission_id']
+                            document.getElementById('thank-you').classList.remove('hidden');
+                        } else {
+                            questions = data['matches']
+                            renderMatchingResult()
+                        }
+                        
+
                     } else {
                         console.error('Error submitting survey');
                     }
@@ -303,6 +428,7 @@ async def get_html():
             document.addEventListener('DOMContentLoaded', () => {
                 fetchQuestions();
                 document.getElementById('submit-btn').addEventListener('click', submitSurvey);
+                document.getElementById('check-btn').addEventListener('click', checkSurvey);
             });
         </script>
     </body>
