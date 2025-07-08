@@ -10,6 +10,7 @@ python = "^3.11"
 pydantic-settings = "^2.2.1"
 fastapi = "^0.115.12"
 uvicorn = "^0.34.2"
+sqlmodel = "^0.0.24"
 
 
 [tool.poetry.group.dev.dependencies]

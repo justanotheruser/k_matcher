@@ -1,7 +1,9 @@
-from pydantic import BaseModel
-from collections import defaultdict
-from k_matcher.domain.answer import Answer, AnswerEnum
 import random
+from collections import defaultdict
+
+from pydantic import BaseModel
+
+from k_matcher.domain.answer import Answer, AnswerEnum
 
 
 class QuestionResult(BaseModel):
@@ -20,7 +22,7 @@ def _is_match(result: QuestionResult) -> bool:
     if max(answer_values) >= AnswerEnum.NEED.value:
         return True
     return all(map(lambda value: value > AnswerEnum.NO_DESIRE.value, answer_values))
-    
+
 
 def filter_matches(question_results: list[QuestionResult]) -> list[QuestionResult]:
     return list(filter(_is_match, question_results))
