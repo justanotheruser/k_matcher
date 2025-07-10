@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+//import reactLogo from "./assets/react.svg";
+//import viteLogo from "/vite.svg";
 import "./App.css";
 
 import Question from "./components/Question.tsx";
 import Spinner from "./components/Spinner.tsx";
 
-const BACKEND_BASE_URL = "http://localhost:8000";
+const BACKEND_BASE_URL = "http://matchyourkink.ru:8080";
 const BACKEND_REQUEST_OPTIONS = {
   headers: {
     accept: "application/json",

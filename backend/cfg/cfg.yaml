@@ -1,5 +1,6 @@
 http:
   allow_origins:
   - 'http://localhost:5173'
+  - 'http://matchyourkink.ru'
 
 token: abc
