@@ -1,8 +1,10 @@
+from typing import ClassVar
+
 from sqlmodel import Field, SQLModel
 
 
 class QuestionCategory(SQLModel, table=True):
-    __tablename__: str = "question_category"
+    __tablename__: ClassVar[str] = "question_category"
     id: int | None = Field(default=None, primary_key=True)
     name: str
     description: str | None = None

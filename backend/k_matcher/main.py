@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, column, select
 
+from k_matcher.config import load_config
 from k_matcher.database import create_db_and_tables, get_session
 from k_matcher.domain.models import Question, QuestionCategory
 
@@ -13,6 +15,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
+config = load_config()
 app = FastAPI(lifespan=lifespan)
 
 
@@ -28,6 +31,13 @@ async def get_questions(*, category_id: int | None = None, session: Session = De
 async def get_question_categories(*, session: Session = Depends(get_session)):
     return session.exec(select(QuestionCategory)).all()
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.http.allow_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     import uvicorn
