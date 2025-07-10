@@ -48,20 +48,20 @@ function App() {
   }, []);
   // TODO: use strict typing
   return (
-    <main>
-       <div className="container mx-auto px-4 py-16">
-        <header className="text-center mb-12 sticky top-0">
+    <>
+      <div className="container flex flex-col h-screen overflow-hidden">
+        <header className="text-center mb-12 w-full">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 mb-4">
             Discover Your Desires
-          </h1> 
+          </h1>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Answer these questions honestly to find your perfect match and
             explore your preferences
           </p>
         </header>
-        <section className="questions max-w-4xl mx-auto m-200">
+        <main className="flex-1 overflow-y-scroll scrollbar-webkit scrollbar-thin">
           {isLoading ? (
-            <div className="flex justify-center items-center py-20">
+            <div className="min-h-screen">
               <Spinner />
             </div>
           ) : errorMessage ? (
@@ -79,10 +79,9 @@ function App() {
               </ul>
             </>
           )}
-        </section>
-      </div>   
-
-    </main>
+        </main>
+      </div>
+    </>
   );
 }
 
