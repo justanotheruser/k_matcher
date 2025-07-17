@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { AppThunk, RootState } from "../../app/store";
+import type { AppThunk, AppDispatch, RootState } from "../../app/store";
 import type { Question as QuestionDB } from "../../api_types";
 
 const GradeAnswerEnum = {
@@ -95,17 +95,18 @@ export const questionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchQuestionsByCategoryId.pending, (state) => {
+      .addCase(showQuestionsForCategoryId.pending, (state) => {
         state.isLoading = true;
         state.errorMessage = "";
       })
-      .addCase(fetchQuestionsByCategoryId.rejected, (state) => {
+      .addCase(showQuestionsForCategoryId.rejected, (state) => {
         state.isLoading = false;
         state.errorMessage = "failed to fetch questions";
       })
-      .addCase(fetchQuestionsByCategoryId.fulfilled, (state, action) => {
+      .addCase(showQuestionsForCategoryId.fulfilled, (state, action) => {
         state.isLoading = false;
         state.errorMessage = "";
+        state.questionsByCategoryId[action.payload.categoryId] =  action.payload.questions;
         state.currentPageCategoryId = action.payload.categoryId;
         state.currentPageQuestions = action.payload.questions;
       });
@@ -163,21 +164,41 @@ export const fetchQuestionCategories = (): AppThunk => {
   };
 };
 
-export const fetchQuestionsByCategoryId = createAsyncThunk(
-  "questions/fetchQuestionsByCategryId",
-  async (categoryId: number) => {
-    const request_options = {
-      ...BACKEND_REQUEST_OPTIONS,
-      method: "GET",
-    };
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/questions?category_id=${categoryId}`,
-      request_options
-    );
-    if (!response.ok) {
-      throw new Error("Failed to fetch questions");
+const createAppAsyncThunk = createAsyncThunk.withTypes<{
+  state: RootState;
+  dispatch: AppDispatch;
+  rejectValue: string;
+  // extra: { s: string; n: number } // This is extra data prop, can leave it out if you are not passing extra data
+}>();
+
+export const showQuestionsForCategoryId = createAppAsyncThunk(
+  "questions/showQuestionsForCategoryId",
+  async (categoryId: number, { getState }) => {
+    const rootState: RootState = getState();
+    console.log(`showQuestionsForCategoryId:\ncategoryId=${categoryId}\nrootState.questions.questionsByCategoryId=${JSON.stringify(rootState.questions.questionsByCategoryId)}`)
+    if (categoryId in rootState.questions.questionsByCategoryId) {
+      console.log(`Already loaded for ${categoryId}`)
+      return {
+        categoryId,
+        questions: rootState.questions.questionsByCategoryId[categoryId],
+      };
     }
-    const questions = await response.json();
-    return { categoryId, questions };
+    return await _fetchQuestionsByCategoryId(categoryId);
   }
 );
+
+const _fetchQuestionsByCategoryId = async (categoryId: number) => {
+  const request_options = {
+    ...BACKEND_REQUEST_OPTIONS,
+    method: "GET",
+  };
+  const response = await fetch(
+    `${BACKEND_BASE_URL}/questions?category_id=${categoryId}`,
+    request_options
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch questions");
+  }
+  const questions = await response.json();
+  return { categoryId, questions };
+};

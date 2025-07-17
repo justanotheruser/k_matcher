@@ -1,16 +1,7 @@
 import type { Action, ThunkAction } from "@reduxjs/toolkit"
-import { configureStore } from "@reduxjs/toolkit"
+import { createAsyncThunk, configureStore } from "@reduxjs/toolkit"
 
-import navigationReducer from "../features/navigation/navigationSlice"
 import questionsReducer from "../features/questions/questionsSlice"
-
-/*import { composeWithDevTools } from "redux-devtools-extension";
-
-const composeEnhancers = composeWithDevTools({ 
-    questionsSlice.actions, 
-    trace: true, 
-    traceLimit: 25 
-}); */
 
 export const store = configureStore({
   reducer: {
@@ -30,3 +21,9 @@ export type AppThunk<ThunkReturnType = void> = ThunkAction<
   unknown,
   Action
 >
+export const createAppAsyncThunk = createAsyncThunk.withTypes<{
+  state: RootState
+  dispatch: AppDispatch
+  rejectValue: string
+  // extra: { s: string; n: number } // This is extra data prop, can leave it out if you are not passing extra data
+}>()

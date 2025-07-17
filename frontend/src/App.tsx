@@ -8,7 +8,7 @@ import Spinner from "./components/Spinner.tsx";
 import { useAppDispatch, useAppSelector } from "./app/hooks.tsx";
 import {
   fetchQuestionCategories,
-  fetchQuestionsByCategoryId,
+  showQuestionsForCategoryId,
   selectIsLoading,
   selectErrorMessage,
   selectCurrentPageQuestions,
@@ -31,8 +31,12 @@ function App() {
     if (currentPageCategoryId === null) {
       return;
     }
-    dispatch(fetchQuestionsByCategoryId(currentPageCategoryId));
+    dispatch(showQuestionsForCategoryId(currentPageCategoryId));
   }, [currentPageCategoryId]);
+
+  useEffect(() => {
+    
+  }, [currentPageQuestions])
 
   return (
     <>

@@ -3,7 +3,7 @@ import type { RootState } from "../../app/store";
 import { useSelector } from "react-redux";
 
 import {
-  fetchQuestionsByCategoryId,
+  showQuestionsForCategoryId,
 } from "../questions/questionsSlice.tsx";
 
 export function Navigation() {
@@ -34,14 +34,14 @@ export function Navigation() {
   return (
     <div className="text-xl font-semibold text-red-100 mb-4 leading-relaxed  mr-10 ml-10 flex justify-between">
       {prevPageCategoryId ? (
-        <a className="left" onClick={() => dispatch(fetchQuestionsByCategoryId(prevPageCategoryId))}>
+        <a className="left" onClick={() => dispatch(showQuestionsForCategoryId(prevPageCategoryId))}>
           &lt;&lt;&lt; Prev
         </a>
       ) : (
         <div />
       )}
       {nextPageCategoryId ? (
-        <a className="right" onClick={() => dispatch(fetchQuestionsByCategoryId(nextPageCategoryId))}>
+        <a className="right" onClick={() => dispatch(showQuestionsForCategoryId(nextPageCategoryId))}>
           Next &gt;&gt;&gt;
         </a>
       ) : (
