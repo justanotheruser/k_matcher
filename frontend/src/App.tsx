@@ -34,10 +34,6 @@ function App() {
     dispatch(showQuestionsForCategoryId(currentPageCategoryId));
   }, [currentPageCategoryId]);
 
-  useEffect(() => {
-    
-  }, [currentPageQuestions])
-
   return (
     <>
       <div className="container flex flex-col h-screen overflow-hidden">
