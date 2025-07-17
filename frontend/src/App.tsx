@@ -3,50 +3,37 @@ import { useState, useEffect } from "react";
 //import viteLogo from "/vite.svg";
 import "./App.css";
 
-import Question from "./components/Question.tsx";
+import QuestionList from "./features/questions/QuestionList";
 import Spinner from "./components/Spinner.tsx";
-
-const BACKEND_BASE_URL = "http://matchyourkink.ru:8080";
-const BACKEND_REQUEST_OPTIONS = {
-  headers: {
-    accept: "application/json",
-  },
-};
+import { useAppDispatch, useAppSelector } from "./app/hooks.tsx";
+import {
+  fetchQuestionCategories,
+  fetchQuestionsByCategoryId,
+  selectIsLoading,
+  selectErrorMessage,
+  selectCurrentPageQuestions,
+  selectCurrentPageCategoryId,
+} from "./features/questions/questionsSlice.tsx";
+import Navigation from "./features/navigation/Navigation";
 
 function App() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [questionList, setQuestionList] = useState([]);
-
-  const fetchQuestions = async () => {
-    setErrorMessage("");
-    setIsLoading(true);
-    try {
-      const request_options = {
-        ...BACKEND_REQUEST_OPTIONS,
-        method: "GET",
-      };
-      const response = await fetch(
-        `${BACKEND_BASE_URL}/questions`,
-        request_options
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch questions");
-      }
-      const data = await response.json();
-      console.log(data);
-      setQuestionList(data);
-    } catch (err) {
-      setErrorMessage(`Failed to fetch questions: ${err}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector(selectIsLoading);
+  const errorMessage = useAppSelector(selectErrorMessage);
+  const currentPageCategoryId = useAppSelector(selectCurrentPageCategoryId);
+  const currentPageQuestions = useAppSelector(selectCurrentPageQuestions);
 
   useEffect(() => {
-    fetchQuestions();
+    dispatch(fetchQuestionCategories());
   }, []);
-  // TODO: use strict typing
+
+  useEffect(() => {
+    if (currentPageCategoryId === null) {
+      return;
+    }
+    dispatch(fetchQuestionsByCategoryId(currentPageCategoryId));
+  }, [currentPageCategoryId]);
+
   return (
     <>
       <div className="container flex flex-col h-screen overflow-hidden">
@@ -59,7 +46,7 @@ function App() {
             explore your preferences
           </p>
         </header>
-        <main className="flex-1 overflow-y-scroll scrollbar-webkit scrollbar-thin">
+        <main className="flex-1 overflow-y-scroll scrollbar-webkit scrollbar-thin pl-10 pr-10">
           {isLoading ? (
             <div className="min-h-screen">
               <Spinner />
@@ -70,13 +57,8 @@ function App() {
             </div>
           ) : (
             <>
-              <ul>
-                {questionList.map((question: any) => (
-                  <li key={question.id}>
-                    <Question text={question.text} />
-                  </li>
-                ))}
-              </ul>
+              <QuestionList questions={currentPageQuestions} />
+              <Navigation />
             </>
           )}
         </main>
