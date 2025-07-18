@@ -3,8 +3,8 @@ import type { RootState } from "../../app/store";
 import { useSelector } from "react-redux";
 
 import {
-  showQuestionsForCategoryId,
-} from "../questions/questionsSlice.tsx";
+  setCategoryId,
+} from "../questions/questionsSlice";
 
 export function Navigation() {
   const prevPageCategoryId: number | null = useSelector((state: RootState) => {
@@ -18,6 +18,7 @@ export function Navigation() {
     }
     return state.questions.questionCategories[categoryRank-1].id
   });
+  
   const nextPageCategoryId: number | null = useSelector((state: RootState) => {
     let currentCategoryId = state.questions.currentPageCategoryId;
     if (currentCategoryId === null) {
@@ -29,21 +30,28 @@ export function Navigation() {
     }
     return state.questions.questionCategories[categoryRank+1].id;
   });
+  
   const dispatch = useAppDispatch();
 
   return (
     <div className="text-xl font-semibold text-red-100 mb-4 leading-relaxed  mr-10 ml-10 flex justify-between">
       {prevPageCategoryId ? (
-        <a className="left" onClick={() => dispatch(showQuestionsForCategoryId(prevPageCategoryId))}>
+        <button 
+          className="left cursor-pointer hover:text-red-300" 
+          onClick={() => dispatch(setCategoryId(prevPageCategoryId))}
+        >
           &lt;&lt;&lt; Prev
-        </a>
+        </button>
       ) : (
         <div />
       )}
       {nextPageCategoryId ? (
-        <a className="right" onClick={() => dispatch(showQuestionsForCategoryId(nextPageCategoryId))}>
+        <button 
+          className="right cursor-pointer hover:text-red-300" 
+          onClick={() => dispatch(setCategoryId(nextPageCategoryId))}
+        >
           Next &gt;&gt;&gt;
-        </a>
+        </button>
       ) : (
         <div />
       )}

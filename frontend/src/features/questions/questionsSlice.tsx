@@ -1,6 +1,6 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { AppThunk, AppDispatch, RootState } from "../../app/store";
+import type { AppThunk, RootState } from "../../app/store";
 import type { Question as QuestionDB } from "../../api_types";
 
 export const GradeAnswerEnum = {
@@ -47,18 +47,18 @@ export interface QuestionnaireState {
   };
   questionsById: { [key: number]: Question };
   currentPageCategoryId: number | null;
-  currentPageQuestions: Question[];
+  isInitialized: boolean;
 }
 
 export const initialState: QuestionnaireState = {
   isLoading: false,
   errorMessage: "",
   questionCategories: [],
-  categoryIdRank: [],
+  categoryIdRank: {},
   questionsByCategoryId: {},
   questionsById: {},
   currentPageCategoryId: null,
-  currentPageQuestions: [],
+  isInitialized: false,
 };
 
 export interface QuestionAnswerAction {
@@ -87,8 +87,7 @@ export const questionsSlice = createSlice({
       console.log(`categories: ${JSON.stringify(action.payload)}`);
       state.questionCategories = action.payload;
       if (state.questionCategories.length > 0) {
-        state.currentPageCategoryId = state.questionCategories[0].id;
-        // сопоставляем каждому id его порядковый номер
+        // Map each id to its index
         state.categoryIdRank = state.questionCategories
           .map((value, index) => ({ id: value.id, index }))
           .reduce((acc: { [key: number]: number }, current) => {
@@ -96,41 +95,28 @@ export const questionsSlice = createSlice({
             return acc;
           }, {});
       }
+      state.isInitialized = true;
+    },
+    questionsLoaded: (state, action: PayloadAction<{categoryId: number, questions: Question[]}>) => {
+      const {categoryId, questions} = action.payload;
+      console.log("questionsLoaded for category:", categoryId, "questions count:", questions.length);
+      
+      state.questionsByCategoryId[categoryId] = questions;
+      questions.forEach((q) => {
+        state.questionsById[q.id] = q;
+      });
     },
     answerSelected: (state, action: PayloadAction<QuestionAnswerAction>) => {
       console.log(`answerSelected, action=${JSON.stringify(action.payload)}`);
       let {questionId, answer} = action.payload;
       localStorage.setItem(questionId.toString() + "-grade", answer.grade.valueOf());
-      state.questionsById[questionId].answer = answer;
+      if (state.questionsById[questionId]) {
+        state.questionsById[questionId].answer = answer;
+      }
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(showQuestionsForCategoryId.pending, (state) => {
-        state.isLoading = true;
-        state.errorMessage = "";
-      })
-      .addCase(showQuestionsForCategoryId.rejected, (state) => {
-        state.isLoading = false;
-        state.errorMessage = "failed to fetch questions";
-      })
-      .addCase(showQuestionsForCategoryId.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.errorMessage = "";
-        let {categoryId, questions} = action.payload;
-        if (state.currentPageCategoryId == categoryId) {
-          return;
-        }
-        state.currentPageCategoryId = categoryId;
-        state.currentPageQuestions = questions;
-        if (categoryId in state.questionsByCategoryId) {
-          return;
-        }
-        state.questionsByCategoryId[categoryId] = questions;
-        questions.forEach((q) => {
-          state.questionsById[q.id] = q;
-        });
-      });
+    setCategoryId: (state, action: PayloadAction<number>) => {
+      state.currentPageCategoryId = action.payload;
+    },
   },
 });
 
@@ -140,16 +126,31 @@ export const {
   errorHappened,
   resetErrorMessage,
   categoriesLoaded,
+  questionsLoaded,
   answerSelected,
+  setCategoryId,
 } = questionsSlice.actions;
+
 export default questionsSlice.reducer;
+
+// Selectors
 export const selectIsLoading = (state: RootState) => state.questions.isLoading;
 export const selectErrorMessage = (state: RootState) =>
   state.questions.errorMessage;
 export const selectCurrentPageCategoryId = (state: RootState) =>
   state.questions.currentPageCategoryId;
-export const selectCurrentPageQuestions = (state: RootState) =>
-  state.questions.currentPageQuestions;
+export const selectCurrentPageQuestions = (state: RootState) => {
+  const categoryId = state.questions.currentPageCategoryId;
+  console.log("selectCurrentPageQuestions called", {
+    categoryId,
+    availableCategories: Object.keys(state.questions.questionsByCategoryId),
+    questionsForCategory: categoryId ? state.questions.questionsByCategoryId[categoryId]?.length : 0
+  });
+  
+  if (categoryId === null) return [];
+  return state.questions.questionsByCategoryId[categoryId] || [];
+};
+export const selectIsInitialized = (state: RootState) => state.questions.isInitialized;
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 const BACKEND_REQUEST_OPTIONS = {
@@ -189,42 +190,40 @@ export const fetchQuestionCategories = (): AppThunk => {
   };
 };
 
-const createAppAsyncThunk = createAsyncThunk.withTypes<{
-  state: RootState;
-  dispatch: AppDispatch;
-  rejectValue: string;
-  // extra: { s: string; n: number } // This is extra data prop, can leave it out if you are not passing extra data
-}>();
-
-export const showQuestionsForCategoryId = createAppAsyncThunk(
-  "questions/showQuestionsForCategoryId",
-  async (categoryId: number, { getState }) => {
-    const rootState: RootState = getState();
-    if (categoryId in rootState.questions.questionsByCategoryId) {
+export const showQuestionsForCategoryId = (categoryId: number): AppThunk => {
+  return async (dispatch, getState) => {
+    const state = getState();
+    
+    // If questions are already loaded, do nothing
+    if (categoryId in state.questions.questionsByCategoryId) {
       console.log(`Already loaded for ${categoryId}`);
-      return {
-        categoryId,
-        questions: rootState.questions.questionsByCategoryId[categoryId],
-      };
+      return;
     }
-    const questionsDB: QuestionDB[] = await _fetchQuestionsByCategoryId(
-      categoryId
-    );
-    const questions: Question[] = [];
-    questionsDB.forEach((q) => {
-      let question: Question = { id: q.id, text: q.text, answer: null };
-      let gradeStr = localStorage.getItem(q.id.toString() + "-grade");
-      if (gradeStr) {
-        const grade = gradeStr as unknown as GradeAnswer;
-        question.answer = { grade, ifForced: false };
-      }
-      questions.push(question);
-    });
+    
+    try {
+      dispatch(loadingStarted());
+      const questionsDB: QuestionDB[] = await _fetchQuestionsByCategoryId(categoryId);
+      const questions: Question[] = [];
+      
+      questionsDB.forEach((q) => {
+        let question: Question = { id: q.id, text: q.text, answer: null };
+        let gradeStr = localStorage.getItem(q.id.toString() + "-grade");
+        if (gradeStr) {
+          const grade = gradeStr as unknown as GradeAnswer;
+          question.answer = { grade, ifForced: false };
+        }
+        questions.push(question);
+      });
 
-    console.log(`result=${JSON.stringify(questions)}`);
-    return { categoryId, questions };
-  }
-);
+      console.log(`result=${JSON.stringify(questions)}`);
+      dispatch(questionsLoaded({ categoryId, questions }));
+    } catch (error) {
+      dispatch(errorHappened(`Failed to fetch questions: ${error}`));
+    } finally {
+      dispatch(loadingFinished());
+    }
+  };
+};
 
 const _fetchQuestionsByCategoryId = async (categoryId: number) => {
   const request_options = {

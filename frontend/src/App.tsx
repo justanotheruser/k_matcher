@@ -1,28 +1,42 @@
 import { useEffect } from "react";
-//import reactLogo from "./assets/react.svg";
-//import viteLogo from "/vite.svg";
 import "./App.css";
 
 import QuestionList from "./features/questions/QuestionList";
-import Spinner from "./components/Spinner.tsx";
-import { useAppDispatch, useAppSelector } from "./app/hooks.tsx";
+import Spinner from "./components/Spinner";
+import { useAppDispatch, useAppSelector } from "./app/hooks";
 import {
   fetchQuestionCategories,
   selectIsLoading,
   selectErrorMessage,
-} from "./features/questions/questionsSlice.tsx";
+  selectIsInitialized,
+  setCategoryId,
+} from "./features/questions/questionsSlice";
 import Navigation from "./features/navigation/Navigation";
+import { useSelector } from "react-redux";
+import type { RootState } from "./app/store";
 
 function App() {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectIsLoading);
   const errorMessage = useAppSelector(selectErrorMessage);
+  const isInitialized = useAppSelector(selectIsInitialized);
+  const questionCategories = useSelector((state: RootState) => state.questions.questionCategories);
+  const currentPageCategoryId = useSelector((state: RootState) => state.questions.currentPageCategoryId);
 
   useEffect(() => {
+    console.log("App useEffect: fetching categories");
     dispatch(fetchQuestionCategories());
   }, []);
 
-  console.log("render App");
+  // Set initial category when categories are loaded
+  useEffect(() => {
+    if (isInitialized && questionCategories.length > 0 && currentPageCategoryId === null) {
+      console.log("Setting initial category:", questionCategories[0].id);
+      dispatch(setCategoryId(questionCategories[0].id));
+    }
+  }, [isInitialized, questionCategories]);
+
+  console.log("App render", { isLoading, errorMessage, isInitialized, categoriesCount: questionCategories.length });
 
   return (
     <>
@@ -38,7 +52,7 @@ function App() {
         </header>
         <main className="flex-1 overflow-y-scroll scrollbar-webkit scrollbar-thin pl-10 pr-10">
           {isLoading ? (
-            <div className="min-h-screen">
+            <div className="min-h-screen flex items-center justify-center">
               <Spinner />
             </div>
           ) : errorMessage ? (
