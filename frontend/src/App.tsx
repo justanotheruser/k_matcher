@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 //import reactLogo from "./assets/react.svg";
 //import viteLogo from "/vite.svg";
 import "./App.css";
@@ -8,11 +8,8 @@ import Spinner from "./components/Spinner.tsx";
 import { useAppDispatch, useAppSelector } from "./app/hooks.tsx";
 import {
   fetchQuestionCategories,
-  showQuestionsForCategoryId,
   selectIsLoading,
   selectErrorMessage,
-  selectCurrentPageQuestions,
-  selectCurrentPageCategoryId,
 } from "./features/questions/questionsSlice.tsx";
 import Navigation from "./features/navigation/Navigation";
 
@@ -20,19 +17,12 @@ function App() {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectIsLoading);
   const errorMessage = useAppSelector(selectErrorMessage);
-  const currentPageCategoryId = useAppSelector(selectCurrentPageCategoryId);
-  const currentPageQuestions = useAppSelector(selectCurrentPageQuestions);
 
   useEffect(() => {
     dispatch(fetchQuestionCategories());
   }, []);
 
-  useEffect(() => {
-    if (currentPageCategoryId === null) {
-      return;
-    }
-    dispatch(showQuestionsForCategoryId(currentPageCategoryId));
-  }, [currentPageCategoryId]);
+  console.log("render App");
 
   return (
     <>
@@ -57,7 +47,7 @@ function App() {
             </div>
           ) : (
             <>
-              <QuestionList questions={currentPageQuestions} />
+              <QuestionList />
               <Navigation />
             </>
           )}

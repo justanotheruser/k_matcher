@@ -45,8 +45,9 @@ export interface QuestionnaireState {
   questionsByCategoryId: {
     [key: number]: Question[];
   };
+  questionsById: { [key: number]: Question };
   currentPageCategoryId: number | null;
-  currentPageQuestions: QuestionDB[];
+  currentPageQuestions: Question[];
 }
 
 export const initialState: QuestionnaireState = {
@@ -55,6 +56,7 @@ export const initialState: QuestionnaireState = {
   questionCategories: [],
   categoryIdRank: [],
   questionsByCategoryId: {},
+  questionsById: {},
   currentPageCategoryId: null,
   currentPageQuestions: [],
 };
@@ -97,10 +99,9 @@ export const questionsSlice = createSlice({
     },
     answerSelected: (state, action: PayloadAction<QuestionAnswerAction>) => {
       console.log(`answerSelected, action=${JSON.stringify(action.payload)}`);
-      localStorage.setItem(
-        action.payload.questionId.toString(),
-        action.payload.answer.grade
-      );
+      let {questionId, answer} = action.payload;
+      localStorage.setItem(questionId.toString() + "-grade", answer.grade.valueOf());
+      state.questionsById[questionId].answer = answer;
     },
   },
   extraReducers: (builder) => {
@@ -116,10 +117,19 @@ export const questionsSlice = createSlice({
       .addCase(showQuestionsForCategoryId.fulfilled, (state, action) => {
         state.isLoading = false;
         state.errorMessage = "";
-        state.questionsByCategoryId[action.payload.categoryId] =
-          action.payload.questions;
-        state.currentPageCategoryId = action.payload.categoryId;
-        state.currentPageQuestions = action.payload.questions
+        let {categoryId, questions} = action.payload;
+        if (state.currentPageCategoryId == categoryId) {
+          return;
+        }
+        state.currentPageCategoryId = categoryId;
+        state.currentPageQuestions = questions;
+        if (categoryId in state.questionsByCategoryId) {
+          return;
+        }
+        state.questionsByCategoryId[categoryId] = questions;
+        questions.forEach((q) => {
+          state.questionsById[q.id] = q;
+        });
       });
   },
 });
@@ -149,7 +159,11 @@ const BACKEND_REQUEST_OPTIONS = {
 };
 
 export const fetchQuestionCategories = (): AppThunk => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    if (getState().questions.questionCategories.length > 0) {
+      console.log("categories already fetched")
+      return;
+    }
     try {
       dispatch(resetErrorMessage());
       dispatch(loadingStarted());
@@ -186,11 +200,6 @@ export const showQuestionsForCategoryId = createAppAsyncThunk(
   "questions/showQuestionsForCategoryId",
   async (categoryId: number, { getState }) => {
     const rootState: RootState = getState();
-    console.log(
-      `showQuestionsForCategoryId:\ncategoryId=${categoryId}\nrootState.questions.questionsByCategoryId=${JSON.stringify(
-        rootState.questions.questionsByCategoryId
-      )}`
-    );
     if (categoryId in rootState.questions.questionsByCategoryId) {
       console.log(`Already loaded for ${categoryId}`);
       return {
@@ -198,20 +207,22 @@ export const showQuestionsForCategoryId = createAppAsyncThunk(
         questions: rootState.questions.questionsByCategoryId[categoryId],
       };
     }
-    const questions = await _fetchQuestionsByCategoryId(categoryId);
-    for (let i = 0; i < questions.length; i++) {
-      let questionId = questions[i].id.toString();
-      let grade = localStorage.getItem(questionId);
-      console.log(`grade for ${questionId} is ${grade}`)
-      if (grade) {
-        questions[i].answer = {
-          grade: grade,
-          ifForced: false,
-        };
+    const questionsDB: QuestionDB[] = await _fetchQuestionsByCategoryId(
+      categoryId
+    );
+    const questions: Question[] = [];
+    questionsDB.forEach((q) => {
+      let question: Question = { id: q.id, text: q.text, answer: null };
+      let gradeStr = localStorage.getItem(q.id.toString() + "-grade");
+      if (gradeStr) {
+        const grade = gradeStr as unknown as GradeAnswer;
+        question.answer = { grade, ifForced: false };
       }
-    }
-    console.log(`result=${JSON.stringify(questions)}`)
-    return {categoryId, questions}
+      questions.push(question);
+    });
+
+    console.log(`result=${JSON.stringify(questions)}`);
+    return { categoryId, questions };
   }
 );
 

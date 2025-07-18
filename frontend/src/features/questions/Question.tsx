@@ -3,7 +3,7 @@ import { useAppDispatch } from "../../app/hooks";
 
 import QuestionButton from "./QuestionButton";
 import type { Question as QuestionData, GradeAnswer } from "./questionsSlice";
-import { GradeAnswerEnum, GRADE_ANSWERS, answerSelected } from "./questionsSlice";
+import { GRADE_ANSWERS, answerSelected } from "./questionsSlice";
 
 
 
@@ -22,7 +22,6 @@ function Question(props: QuestionData) {
             <QuestionButton
               key={answer.valueOf()}
               text={answer.valueOf()}
-              questionId={props.id}
               isSelected={
                 gradeAnswer ? gradeAnswer === answer.valueOf() : false
               }
