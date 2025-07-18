@@ -58,7 +58,12 @@ function QuestionList() {
       <ul>
         {currentPageQuestions.map((question) => (
           <li key={question.id}>
-            <Question {...question} />{" "}
+            <Question
+              questionId={question.id}
+              text={question.text}
+              answer={question.answer}
+              categoryId={currentPageCategoryId}
+            />{" "}
           </li>
         ))}{" "}
       </ul>

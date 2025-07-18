@@ -2,12 +2,18 @@ import { useState } from "react";
 import { useAppDispatch } from "../../app/hooks";
 
 import QuestionButton from "./QuestionButton";
-import type { Question as QuestionData, GradeAnswer } from "./questionsSlice";
+import type { Answer, GradeAnswer } from "./questionsSlice";
 import { GRADE_ANSWERS, answerSelected } from "./questionsSlice";
 
 
+interface QuestionProps {
+  questionId: number
+  categoryId: number
+  text: string
+  answer: Answer | null
+}
 
-function Question(props: QuestionData) {
+function Question(props: QuestionProps) {
   const [gradeAnswer, setGradeAnswer] = useState<GradeAnswer | null>(() => props.answer ? props.answer.grade : null);
   const dispatch = useAppDispatch();
 
@@ -29,7 +35,8 @@ function Question(props: QuestionData) {
                 setGradeAnswer(answer);
                 dispatch(
                   answerSelected({
-                    questionId: props.id,
+                    questionId: props.questionId,
+                    categoryId: props.categoryId,
                     answer: {
                       grade: answer,
                       ifForced: false,
@@ -41,7 +48,7 @@ function Question(props: QuestionData) {
           ))}
           <div className="flex items-center mb-4">
             <input
-              id={props.id.toString() + "-if-forced"}
+              id={props.questionId.toString() + "-if-forced"}
               type="checkbox"
               value=""
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"

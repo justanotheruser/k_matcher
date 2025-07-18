@@ -63,6 +63,7 @@ export const initialState: QuestionnaireState = {
 
 export interface QuestionAnswerAction {
   questionId: number;
+  categoryId: number;
   answer: Answer;
 }
 
@@ -97,10 +98,18 @@ export const questionsSlice = createSlice({
       }
       state.isInitialized = true;
     },
-    questionsLoaded: (state, action: PayloadAction<{categoryId: number, questions: Question[]}>) => {
-      const {categoryId, questions} = action.payload;
-      console.log("questionsLoaded for category:", categoryId, "questions count:", questions.length);
-      
+    questionsLoaded: (
+      state,
+      action: PayloadAction<{ categoryId: number; questions: Question[] }>
+    ) => {
+      const { categoryId, questions } = action.payload;
+      console.log(
+        "questionsLoaded for category:",
+        categoryId,
+        "questions count:",
+        questions.length
+      );
+
       state.questionsByCategoryId[categoryId] = questions;
       questions.forEach((q) => {
         state.questionsById[q.id] = q;
@@ -108,10 +117,19 @@ export const questionsSlice = createSlice({
     },
     answerSelected: (state, action: PayloadAction<QuestionAnswerAction>) => {
       console.log(`answerSelected, action=${JSON.stringify(action.payload)}`);
-      let {questionId, answer} = action.payload;
-      localStorage.setItem(questionId.toString() + "-grade", answer.grade.valueOf());
+      let { questionId, categoryId, answer } = action.payload;
+      localStorage.setItem(
+        questionId.toString() + "-grade",
+        answer.grade.valueOf()
+      );
       if (state.questionsById[questionId]) {
         state.questionsById[questionId].answer = answer;
+        const question = state.questionsByCategoryId[categoryId].find(
+          (q) => q.id == questionId
+        );
+        if (question) {
+          question.answer = answer;
+        }
       }
     },
     setCategoryId: (state, action: PayloadAction<number>) => {
@@ -144,13 +162,16 @@ export const selectCurrentPageQuestions = (state: RootState) => {
   console.log("selectCurrentPageQuestions called", {
     categoryId,
     availableCategories: Object.keys(state.questions.questionsByCategoryId),
-    questionsForCategory: categoryId ? state.questions.questionsByCategoryId[categoryId]?.length : 0
+    questionsForCategory: categoryId
+      ? state.questions.questionsByCategoryId[categoryId]?.length
+      : 0,
   });
-  
+
   if (categoryId === null) return [];
   return state.questions.questionsByCategoryId[categoryId] || [];
 };
-export const selectIsInitialized = (state: RootState) => state.questions.isInitialized;
+export const selectIsInitialized = (state: RootState) =>
+  state.questions.isInitialized;
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 const BACKEND_REQUEST_OPTIONS = {
@@ -162,7 +183,7 @@ const BACKEND_REQUEST_OPTIONS = {
 export const fetchQuestionCategories = (): AppThunk => {
   return async (dispatch, getState) => {
     if (getState().questions.questionCategories.length > 0) {
-      console.log("categories already fetched")
+      console.log("categories already fetched");
       return;
     }
     try {
@@ -193,18 +214,20 @@ export const fetchQuestionCategories = (): AppThunk => {
 export const showQuestionsForCategoryId = (categoryId: number): AppThunk => {
   return async (dispatch, getState) => {
     const state = getState();
-    
+
     // If questions are already loaded, do nothing
     if (categoryId in state.questions.questionsByCategoryId) {
       console.log(`Already loaded for ${categoryId}`);
       return;
     }
-    
+
     try {
       dispatch(loadingStarted());
-      const questionsDB: QuestionDB[] = await _fetchQuestionsByCategoryId(categoryId);
+      const questionsDB: QuestionDB[] = await _fetchQuestionsByCategoryId(
+        categoryId
+      );
       const questions: Question[] = [];
-      
+
       questionsDB.forEach((q) => {
         let question: Question = { id: q.id, text: q.text, answer: null };
         let gradeStr = localStorage.getItem(q.id.toString() + "-grade");
