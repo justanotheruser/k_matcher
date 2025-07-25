@@ -46,7 +46,7 @@ export interface QuestionnaireState {
     [key: number]: Question[];
   };
   questionsById: { [key: number]: Question };
-  currentPageCategoryId: number | null;
+  currentPageCategory: QuestionCategory | null;
   isInitialized: boolean;
 }
 
@@ -57,7 +57,7 @@ export const initialState: QuestionnaireState = {
   categoryIdRank: {},
   questionsByCategoryId: {},
   questionsById: {},
-  currentPageCategoryId: null,
+  currentPageCategory: null,
   isInitialized: false,
 };
 
@@ -132,8 +132,8 @@ export const questionsSlice = createSlice({
         }
       }
     },
-    setCategoryId: (state, action: PayloadAction<number>) => {
-      state.currentPageCategoryId = action.payload;
+    setCategory: (state, action: PayloadAction<QuestionCategory>) => {
+      state.currentPageCategory = action.payload;
     },
   },
 });
@@ -146,19 +146,22 @@ export const {
   categoriesLoaded,
   questionsLoaded,
   answerSelected,
-  setCategoryId,
+  setCategory,
 } = questionsSlice.actions;
 
 export default questionsSlice.reducer;
+
+const EMPTY_QUESTIONS_ARRAY: Question[] = [];
 
 // Selectors
 export const selectIsLoading = (state: RootState) => state.questions.isLoading;
 export const selectErrorMessage = (state: RootState) =>
   state.questions.errorMessage;
-export const selectCurrentPageCategoryId = (state: RootState) =>
-  state.questions.currentPageCategoryId;
+export const selectCurrentPageCategory = (state: RootState) =>
+  state.questions.currentPageCategory;
 export const selectCurrentPageQuestions = (state: RootState) => {
-  const categoryId = state.questions.currentPageCategoryId;
+  const currentCategory = state.questions.currentPageCategory;
+  const categoryId = currentCategory ? currentCategory.id : null;
   console.log("selectCurrentPageQuestions called", {
     categoryId,
     availableCategories: Object.keys(state.questions.questionsByCategoryId),
@@ -167,8 +170,10 @@ export const selectCurrentPageQuestions = (state: RootState) => {
       : 0,
   });
 
-  if (categoryId === null) return [];
-  return state.questions.questionsByCategoryId[categoryId] || [];
+  if (categoryId === null) return EMPTY_QUESTIONS_ARRAY;
+  return (
+    state.questions.questionsByCategoryId[categoryId] || EMPTY_QUESTIONS_ARRAY
+  );
 };
 export const selectIsInitialized = (state: RootState) =>
   state.questions.isInitialized;

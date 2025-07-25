@@ -9,7 +9,7 @@ import {
   selectIsLoading,
   selectErrorMessage,
   selectIsInitialized,
-  setCategoryId,
+  setCategory,
 } from "./features/questions/questionsSlice";
 import Navigation from "./features/navigation/Navigation";
 import { useSelector } from "react-redux";
@@ -20,8 +20,12 @@ function App() {
   const isLoading = useAppSelector(selectIsLoading);
   const errorMessage = useAppSelector(selectErrorMessage);
   const isInitialized = useAppSelector(selectIsInitialized);
-  const questionCategories = useSelector((state: RootState) => state.questions.questionCategories);
-  const currentPageCategoryId = useSelector((state: RootState) => state.questions.currentPageCategoryId);
+  const questionCategories = useSelector(
+    (state: RootState) => state.questions.questionCategories
+  );
+  const currentPageCategory = useSelector(
+    (state: RootState) => state.questions.currentPageCategory
+  );
 
   useEffect(() => {
     console.log("App useEffect: fetching categories");
@@ -30,13 +34,22 @@ function App() {
 
   // Set initial category when categories are loaded
   useEffect(() => {
-    if (isInitialized && questionCategories.length > 0 && currentPageCategoryId === null) {
+    if (
+      isInitialized &&
+      questionCategories.length > 0 &&
+      currentPageCategory === null
+    ) {
       console.log("Setting initial category:", questionCategories[0].id);
-      dispatch(setCategoryId(questionCategories[0].id));
+      dispatch(setCategory(questionCategories[0]));
     }
   }, [isInitialized, questionCategories]);
 
-  console.log("App render", { isLoading, errorMessage, isInitialized, categoriesCount: questionCategories.length });
+  console.log("App render", {
+    isLoading,
+    errorMessage,
+    isInitialized,
+    categoriesCount: questionCategories.length,
+  });
 
   return (
     <>
