@@ -46,11 +46,6 @@ function QuestionList() {
     return <></>;
   }
 
-  if (currentPageQuestions.length === 0) {
-    console.log("QuestionList: No questions available");
-    return <></>;
-  }
-
   console.log(`questions: ${JSON.stringify(currentPageQuestions)}`);
   return (
     <>
