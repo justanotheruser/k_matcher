@@ -6,7 +6,7 @@ from sqlmodel import Session, column, select
 
 from k_matcher.config import load_config
 from k_matcher.database import create_db_and_tables, get_session
-from k_matcher.domain.models import Question, QuestionCategory
+from k_matcher.models.models import Question, QuestionCategory
 
 
 @asynccontextmanager
@@ -31,6 +31,10 @@ async def get_questions(*, category_id: int | None = None, session: Session = De
 async def get_question_categories(*, session: Session = Depends(get_session)):
     return session.exec(select(QuestionCategory)).all()
 
+
+# @app.post("/answers")
+# async def post_answers(*, session: Session = Depends(get_session)):
+#    return session.exec('')
 
 app.add_middleware(
     CORSMiddleware,
