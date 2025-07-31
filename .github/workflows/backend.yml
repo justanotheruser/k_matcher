@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -26,4 +26,6 @@ jobs:
         poetry install
     
     - name: Run tests
-      run: python -m poetry run pytest
+      run: |
+        cd backend
+        python -m poetry run pytest
