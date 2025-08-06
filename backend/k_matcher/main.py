@@ -1,21 +1,28 @@
+import datetime
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, column, select
 
-from k_matcher.config import load_config
-from k_matcher.database import create_db_and_tables, get_session
-from k_matcher.models.models import Question, QuestionCategory
+from k_matcher.config import config
+from k_matcher.database import create_db_and_tables, engine, get_session
+from k_matcher.models.models import (
+    Answer,
+    Question,
+    QuestionCategory,
+    Result,
+    ResultCreate,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    create_db_and_tables(engine)
     yield
 
 
-config = load_config()
 app = FastAPI(lifespan=lifespan)
 
 
@@ -32,9 +39,32 @@ async def get_question_categories(*, session: Session = Depends(get_session)):
     return session.exec(select(QuestionCategory)).all()
 
 
-# @app.post("/answers")
-# async def post_answers(*, session: Session = Depends(get_session)):
-#    return session.exec('')
+@app.post("/result")
+async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)):
+    try:
+        result = Result(created_at=datetime.datetime.now())
+        session.add(result)
+        session.flush()
+
+        answers = []
+        for answer in request.answers:
+            answers.append(
+                Answer(
+                    result_id=result.id,
+                    question_id=answer.question_id,
+                    answer=answer.answer,
+                    if_forced=answer.if_forced,
+                )
+            )
+        session.add_all(answers)
+        session.commit()
+        return result
+    except IntegrityError as e:
+        session.rollback()
+        if "FOREIGN KEY constraint failed" in str(e):
+            raise HTTPException(status_code=400, detail="Foreign key constraint violated")
+        raise HTTPException(status_code=500, detail="Database integrity error")
+
 
 app.add_middleware(
     CORSMiddleware,

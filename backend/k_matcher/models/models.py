@@ -2,6 +2,7 @@ import datetime
 import uuid
 from typing import ClassVar
 
+from pydantic import BaseModel
 from sqlmodel import Column, Field, PrimaryKeyConstraint, Relationship, SQLModel, text
 
 from k_matcher.domain.answer import AnswerEnum
@@ -18,7 +19,7 @@ class QuestionCategory(SQLModel, table=True):
 class Question(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     text: str
-    category_id: int = Field(foreign_key="question_category.id")
+    category_id: int = Field(foreign_key="question_category.id", ondelete="CASCADE")
 
 
 class Result(SQLModel, table=True):
@@ -26,7 +27,7 @@ class Result(SQLModel, table=True):
     created_at: datetime.datetime = Field(
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")}
     )
-    answers: list["Answer"] = Relationship(back_populates="result", cascade_delete=True)
+    # answers: list["Answer"] = Relationship(back_populates="result", cascade_delete=True)
 
 
 class Answer(SQLModel, table=True):
@@ -37,3 +38,13 @@ class Answer(SQLModel, table=True):
         sa_column=Column(name="answer", nullable=False, type_=IntEnum(AnswerEnum))
     )
     if_forced: bool = Field(default=False, nullable=False)
+
+
+class AnswerCreate(BaseModel):
+    question_id: int
+    answer: AnswerEnum
+    if_forced: bool = False
+
+
+class ResultCreate(BaseModel):
+    answers: list[AnswerCreate]

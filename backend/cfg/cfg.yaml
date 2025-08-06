@@ -1,6 +1,6 @@
 http:
   allow_origins:
-  - 'http://localhost:5173'
-  - 'http://matchyourkink.ru'
+    - "http://localhost:5173"
+    - "http://matchyourkink.ru"
 
-token: abc
+sqlite_file_name: "db.sqlite"

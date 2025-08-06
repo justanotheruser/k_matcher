@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 from yaml import safe_load
 
@@ -13,7 +12,7 @@ class HttpConfig(BaseSettings):
 
 class Config(BaseSettings):
     http: HttpConfig
-    token: SecretStr
+    sqlite_file_name: str
 
 
 def load_config(path: Path | None = None) -> Config:
@@ -28,3 +27,6 @@ def load_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise TypeError(f"Config file has no top-level mapping: {path}")
     return config
+
+
+config = load_config()

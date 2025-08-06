@@ -25,6 +25,8 @@ pytest = "^8.1.1"
 pre-commit = "^3.7.0"
 flake8-pyproject = "^1.2.3"
 types-pyyaml = "^6.0.12.20240311"
+httpx = "^0.28.1"
+pytest-asyncio = "^1.1.0"
 
 [tool.bandit]
 exclude_dirs = [
