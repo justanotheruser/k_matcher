@@ -17,8 +17,6 @@ import Navigation from "./features/navigation/Navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "./app/store";
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
-
 function App() {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectIsLoading);

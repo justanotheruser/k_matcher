@@ -50,6 +50,7 @@ export interface QuestionnaireState {
   isInitialized: boolean;
   isSubmitting: boolean;
   submissionResult: SubmitResult | null;
+  submissionErrorMessage: string | null;
   submissionSuccess: boolean | null;
   showSubmitButton: boolean;
 }
@@ -66,6 +67,7 @@ export const initialState: QuestionnaireState = {
   isSubmitting: false,
   submissionResult: null,
   submissionSuccess: null,
+  submissionErrorMessage: null,
   showSubmitButton: false,
 };
 
@@ -157,13 +159,15 @@ export const questionsSlice = createSlice({
     submitFinished: (state) => {
       state.isSubmitting = false;
     },
-    submitSuccess: (state, action: PayloadAction<string>) => {
+    submitSuccess: (state, action: PayloadAction<SubmitResult>) => {
       state.submissionResult = action.payload;
+      state.submissionErrorMessage = null;
       state.submissionSuccess = true;
       state.showSubmitButton = false;
     },
     submitError: (state, action: PayloadAction<string>) => {
-      state.submissionResult = action.payload;
+      state.submissionResult = null;
+      state.submissionErrorMessage = action.payload;
       state.submissionSuccess = false;
       state.showSubmitButton = false;
     },
@@ -223,6 +227,8 @@ export const selectSubmissionResult = (state: RootState) =>
   state.questions.submissionResult;
 export const selectSubmissionSuccess = (state: RootState) =>
   state.questions.submissionSuccess;
+export const selectSubmissionErrorMessage = (state: RootState) =>
+  state.questions.submissionErrorMessage;
 export const selectShowSubmitButton = (state: RootState) =>
   state.questions.showSubmitButton;
 export const selectAllQuestionsAnswered = (state: RootState) => {
