@@ -27,7 +27,7 @@ const SubmissionResult = () => {
         <br />
         Give{" "}
         <a
-          href={`${BACKEND_BASE_URL}/results/${submissionResult.id}`}
+          href={`${BACKEND_BASE_URL}/${submissionResult.id}`}
           target="_blank"
           rel="noopener noreferrer"
           className="underline"
