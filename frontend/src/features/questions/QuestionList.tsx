@@ -1,20 +1,23 @@
 import { useEffect } from "react";
 import Question from "./Question";
+import SubmitButton from "./SubmitButton";
 import {
   selectCurrentPageQuestions,
   selectCurrentPageCategory,
   selectIsInitialized,
   selectIsLoading,
   showQuestionsForCategoryId,
+  selectShowSubmitButton,
 } from "./questionsSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
-function QuestionList() {
+const QuestionList = () => {
   const dispatch = useAppDispatch();
   const currentPageCategory = useAppSelector(selectCurrentPageCategory);
   const currentPageQuestions = useAppSelector(selectCurrentPageQuestions);
   const isInitialized = useAppSelector(selectIsInitialized);
   const isLoading = useAppSelector(selectIsLoading);
+  const showSubmitButton = useAppSelector(selectShowSubmitButton);
 
   useEffect(() => {
     console.log("QuestionList useEffect triggered", {
@@ -64,8 +67,9 @@ function QuestionList() {
           </li>
         ))}{" "}
       </ul>
+      {showSubmitButton && <SubmitButton />}
     </>
   );
-}
+};
 
 export default QuestionList;

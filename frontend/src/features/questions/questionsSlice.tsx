@@ -48,6 +48,10 @@ export interface QuestionnaireState {
   questionsById: { [key: number]: Question };
   currentPageCategory: QuestionCategory | null;
   isInitialized: boolean;
+  isSubmitting: boolean;
+  submissionResult: string | null;
+  submissionSuccess: boolean | null;
+  showSubmitButton: boolean;
 }
 
 export const initialState: QuestionnaireState = {
@@ -59,6 +63,10 @@ export const initialState: QuestionnaireState = {
   questionsById: {},
   currentPageCategory: null,
   isInitialized: false,
+  isSubmitting: false,
+  submissionResult: null,
+  submissionSuccess: null,
+  showSubmitButton: false,
 };
 
 export interface QuestionAnswerAction {
@@ -117,7 +125,7 @@ export const questionsSlice = createSlice({
     },
     answerSelected: (state, action: PayloadAction<QuestionAnswerAction>) => {
       console.log(`answerSelected, action=${JSON.stringify(action.payload)}`);
-      let { questionId, categoryId, answer } = action.payload;
+      const { questionId, categoryId, answer } = action.payload;
       localStorage.setItem(
         questionId.toString() + "-grade",
         answer.grade.valueOf()
@@ -131,9 +139,36 @@ export const questionsSlice = createSlice({
           question.answer = answer;
         }
       }
+
+      // Check if all questions have answers
+      const allQuestions = Object.values(state.questionsById);
+      const allQuestionsAnswered =
+        allQuestions.length > 0 && allQuestions.every((q) => q.answer !== null);
+
+      state.showSubmitButton = allQuestionsAnswered;
     },
     setCategory: (state, action: PayloadAction<QuestionCategory>) => {
       state.currentPageCategory = action.payload;
+    },
+    submitStarted: (state) => {
+      state.isSubmitting = true;
+      state.submissionResult = null;
+    },
+    submitFinished: (state) => {
+      state.isSubmitting = false;
+    },
+    submitSuccess: (state, action: PayloadAction<string>) => {
+      state.submissionResult = action.payload;
+      state.submissionSuccess = true;
+      state.showSubmitButton = false;
+    },
+    submitError: (state, action: PayloadAction<string>) => {
+      state.submissionResult = action.payload;
+      state.submissionSuccess = false;
+      state.showSubmitButton = false;
+    },
+    setShowSubmitButton: (state, action: PayloadAction<boolean>) => {
+      state.showSubmitButton = action.payload;
     },
   },
 });
@@ -147,6 +182,11 @@ export const {
   questionsLoaded,
   answerSelected,
   setCategory,
+  submitStarted,
+  submitFinished,
+  submitSuccess,
+  submitError,
+  setShowSubmitButton,
 } = questionsSlice.actions;
 
 export default questionsSlice.reducer;
@@ -177,6 +217,20 @@ export const selectCurrentPageQuestions = (state: RootState) => {
 };
 export const selectIsInitialized = (state: RootState) =>
   state.questions.isInitialized;
+export const selectIsSubmitting = (state: RootState) =>
+  state.questions.isSubmitting;
+export const selectSubmissionResult = (state: RootState) =>
+  state.questions.submissionResult;
+export const selectSubmissionSuccess = (state: RootState) =>
+  state.questions.submissionSuccess;
+export const selectShowSubmitButton = (state: RootState) =>
+  state.questions.showSubmitButton;
+export const selectAllQuestionsAnswered = (state: RootState) => {
+  const allQuestions = Object.values(state.questions.questionsById);
+  return (
+    allQuestions.length > 0 && allQuestions.every((q) => q.answer !== null)
+  );
+};
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 const BACKEND_REQUEST_OPTIONS = {
@@ -234,8 +288,8 @@ export const showQuestionsForCategoryId = (categoryId: number): AppThunk => {
       const questions: Question[] = [];
 
       questionsDB.forEach((q) => {
-        let question: Question = { id: q.id, text: q.text, answer: null };
-        let gradeStr = localStorage.getItem(q.id.toString() + "-grade");
+        const question: Question = { id: q.id, text: q.text, answer: null };
+        const gradeStr = localStorage.getItem(q.id.toString() + "-grade");
         if (gradeStr) {
           const grade = gradeStr as unknown as GradeAnswer;
           question.answer = { grade, ifForced: false };
@@ -266,4 +320,76 @@ const _fetchQuestionsByCategoryId = async (categoryId: number) => {
     throw new Error("Failed to fetch questions");
   }
   return await response.json();
+};
+
+export const submitAnswers = (): AppThunk => {
+  return async (dispatch, getState) => {
+    const state = getState();
+    const allQuestions = Object.values(state.questions.questionsById);
+
+    // Convert answers to backend format
+    const answers = allQuestions
+      .filter((q) => q.answer !== null)
+      .map((q) => {
+        const answer = q.answer!;
+        const gradeToNumber = {
+          [GradeAnswerEnum.Never]: 0,
+          [GradeAnswerEnum.NoDesire]: 1,
+          [GradeAnswerEnum.Maybe]: 2,
+          [GradeAnswerEnum.Yes]: 3,
+          [GradeAnswerEnum.Need]: 4,
+        };
+
+        const result: {
+          question_id: number;
+          answer: number;
+          if_forced?: boolean;
+        } = {
+          question_id: q.id,
+          answer: gradeToNumber[answer.grade],
+        };
+
+        if (answer.ifForced) {
+          result.if_forced = true;
+        }
+
+        return result;
+      });
+
+    try {
+      dispatch(submitStarted());
+
+      const request_options = {
+        ...BACKEND_REQUEST_OPTIONS,
+        method: "POST",
+        headers: {
+          ...BACKEND_REQUEST_OPTIONS.headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ answers }),
+      };
+
+      const response = await fetch(
+        `${BACKEND_BASE_URL}/result`,
+        request_options
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        dispatch(
+          submitSuccess(data.message || "Answers submitted successfully!")
+        );
+      } else if (response.status === 400) {
+        dispatch(submitError("Something went wrong"));
+      } else if (response.status === 500) {
+        dispatch(submitError("Something went wrong"));
+      } else {
+        dispatch(submitError("Something went wrong"));
+      }
+    } catch {
+      dispatch(submitError("Something went wrong"));
+    } finally {
+      dispatch(submitFinished());
+    }
+  };
 };

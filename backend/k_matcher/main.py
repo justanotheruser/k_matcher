@@ -40,7 +40,7 @@ async def get_question_categories(*, session: Session = Depends(get_session)):
 
 
 @app.post("/result")
-async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)):
+async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)) -> Result:
     try:
         result = Result(created_at=datetime.datetime.now())
         session.add(result)

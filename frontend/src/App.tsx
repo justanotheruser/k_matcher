@@ -9,6 +9,8 @@ import {
   selectIsLoading,
   selectErrorMessage,
   selectIsInitialized,
+  selectSubmissionResult,
+  selectSubmissionSuccess,
   setCategory,
 } from "./features/questions/questionsSlice";
 import Navigation from "./features/navigation/Navigation";
@@ -26,6 +28,8 @@ function App() {
   const currentPageCategory = useSelector(
     (state: RootState) => state.questions.currentPageCategory
   );
+  const submissionResult = useAppSelector(selectSubmissionResult);
+  const isSubmissionSuccess = useAppSelector(selectSubmissionSuccess);
 
   useEffect(() => {
     console.log("App useEffect: fetching categories");
@@ -49,6 +53,8 @@ function App() {
     errorMessage,
     isInitialized,
     categoriesCount: questionCategories.length,
+    submissionResult,
+    isSubmissionSuccess,
   });
 
   return (
@@ -71,6 +77,18 @@ function App() {
           ) : errorMessage ? (
             <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 text-center">
               <p className="text-red-300 text-lg">{errorMessage}</p>
+            </div>
+          ) : submissionResult ? (
+            <div className="min-h-screen flex items-center justify-center">
+              <div
+                className={`text-lg font-semibold p-6 rounded-lg max-w-2xl text-center ${
+                  isSubmissionSuccess
+                    ? "bg-green-900/20 border border-green-500 text-green-300"
+                    : "bg-red-900/20 border border-red-500 text-red-300"
+                }`}
+              >
+                {submissionResult}
+              </div>
             </div>
           ) : (
             <>
