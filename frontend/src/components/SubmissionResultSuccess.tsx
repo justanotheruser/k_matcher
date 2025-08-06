@@ -1,8 +1,6 @@
 import { useAppSelector } from "../app/hooks";
 import { selectSubmissionResult } from "../features/questions/questionsSlice";
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
-
 const SubmissionResultSuccess = () => {
   const submissionResult = useAppSelector(selectSubmissionResult);
 
@@ -17,7 +15,7 @@ const SubmissionResultSuccess = () => {
         <br />
         Give{" "}
         <a
-          href={`${BACKEND_BASE_URL}/${submissionResult.id}`}
+          href={`/${submissionResult.id}`}
           target="_blank"
           rel="noopener noreferrer"
           className="underline"
