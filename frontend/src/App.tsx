@@ -3,6 +3,7 @@ import "./App.css";
 
 import QuestionList from "./features/questions/QuestionList";
 import Spinner from "./components/Spinner";
+import SubmissionResult from "./components/SubmissionResult";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import {
   fetchQuestionCategories,
@@ -10,7 +11,6 @@ import {
   selectErrorMessage,
   selectIsInitialized,
   selectSubmissionResult,
-  selectSubmissionSuccess,
   setCategory,
 } from "./features/questions/questionsSlice";
 import Navigation from "./features/navigation/Navigation";
@@ -31,7 +31,6 @@ function App() {
     (state: RootState) => state.questions.currentPageCategory
   );
   const submissionResult = useAppSelector(selectSubmissionResult);
-  const isSubmissionSuccess = useAppSelector(selectSubmissionSuccess);
 
   useEffect(() => {
     console.log("App useEffect: fetching categories");
@@ -55,8 +54,6 @@ function App() {
     errorMessage,
     isInitialized,
     categoriesCount: questionCategories.length,
-    submissionResult,
-    isSubmissionSuccess,
   });
 
   return (
@@ -81,39 +78,7 @@ function App() {
               <p className="text-red-300 text-lg">{errorMessage}</p>
             </div>
           ) : submissionResult ? (
-            <div className="min-h-screen flex items-center justify-center">
-              <div
-                className={`text-lg font-semibold p-6 rounded-lg max-w-2xl text-center ${
-                  isSubmissionSuccess
-                    ? "bg-green-900/20 border border-green-500 text-green-300"
-                    : "bg-red-900/20 border border-red-500 text-red-300"
-                }`}
-              >
-                Your code is:{" "}
-                <span className="font-bold">
-                  <a
-                    href={`${BACKEND_BASE_URL}/results/${submissionResult.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    {submissionResult.id}
-                  </a>
-                </span>
-                <br />
-                Give{" "}
-                <a
-                  href={`${BACKEND_BASE_URL}/results/${submissionResult.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  this link
-                </a>{" "}
-                to your partner. Results will be available after both of you
-                submit answers.
-              </div>
-            </div>
+            <SubmissionResult />
           ) : (
             <>
               <QuestionList />
