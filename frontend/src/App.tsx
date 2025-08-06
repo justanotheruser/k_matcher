@@ -68,7 +68,13 @@ function App() {
             explore your preferences
           </p>
         </header>
-        <main className="flex-1 overflow-y-scroll scrollbar-webkit scrollbar-thin pl-10 pr-10">
+        <main
+          className={`flex-1 pl-10 pr-10 ${
+            submissionResult
+              ? ""
+              : "overflow-y-scroll scrollbar-webkit scrollbar-thin"
+          }`}
+        >
           {isLoading ? (
             <div className="min-h-screen flex items-center justify-center">
               <Spinner />

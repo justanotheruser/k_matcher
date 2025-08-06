@@ -15,7 +15,7 @@ const SubmissionResult = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="flex justify-center">
       <div
         className={`text-lg font-semibold p-6 rounded-lg max-w-2xl text-center ${
           isSubmissionSuccess
