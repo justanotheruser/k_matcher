@@ -17,6 +17,8 @@ import Navigation from "./features/navigation/Navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "./app/store";
 
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
+
 function App() {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectIsLoading);
@@ -87,7 +89,29 @@ function App() {
                     : "bg-red-900/20 border border-red-500 text-red-300"
                 }`}
               >
-                {submissionResult}
+                Your code is:{" "}
+                <span className="font-bold">
+                  <a
+                    href={`${BACKEND_BASE_URL}/results/${submissionResult.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    {submissionResult.id}
+                  </a>
+                </span>
+                <br />
+                Give{" "}
+                <a
+                  href={`${BACKEND_BASE_URL}/results/${submissionResult.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  this link
+                </a>{" "}
+                to your partner. Results will be available after both of you
+                submit answers.
               </div>
             </div>
           ) : (

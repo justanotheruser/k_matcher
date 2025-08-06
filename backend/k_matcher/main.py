@@ -14,6 +14,7 @@ from k_matcher.models.models import (
     QuestionCategory,
     Result,
     ResultCreate,
+    ResultPublic,
 )
 
 
@@ -40,7 +41,7 @@ async def get_question_categories(*, session: Session = Depends(get_session)):
 
 
 @app.post("/result")
-async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)) -> Result:
+async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)) -> ResultPublic:
     try:
         result = Result(created_at=datetime.datetime.now())
         session.add(result)
@@ -58,7 +59,7 @@ async def post_result(*, request: ResultCreate, session: Session = Depends(get_s
             )
         session.add_all(answers)
         session.commit()
-        return result
+        return ResultPublic(id=str(result.id))
     except IntegrityError as e:
         session.rollback()
         if "FOREIGN KEY constraint failed" in str(e):

@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { AppThunk, RootState } from "../../app/store";
-import type { Question as QuestionDB } from "../../api_types";
+import type { Question as QuestionDB, SubmitResult } from "../../api_types";
 
 export const GradeAnswerEnum = {
   Never: "Never",
@@ -49,7 +49,7 @@ export interface QuestionnaireState {
   currentPageCategory: QuestionCategory | null;
   isInitialized: boolean;
   isSubmitting: boolean;
-  submissionResult: string | null;
+  submissionResult: SubmitResult | null;
   submissionSuccess: boolean | null;
   showSubmitButton: boolean;
 }
@@ -375,10 +375,8 @@ export const submitAnswers = (): AppThunk => {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        dispatch(
-          submitSuccess(data.message || "Answers submitted successfully!")
-        );
+        const data: SubmitResult = await response.json();
+        dispatch(submitSuccess(data));
       } else if (response.status === 400) {
         dispatch(submitError("Something went wrong"));
       } else if (response.status === 500) {

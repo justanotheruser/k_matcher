@@ -8,4 +8,8 @@ interface QuestionCategory {
   id: number;
   name: string;
 }
-export type { Question, QuestionCategory };
+
+interface SubmitResult {
+  id: string;
+}
+export type { Question, QuestionCategory, SubmitResult };
