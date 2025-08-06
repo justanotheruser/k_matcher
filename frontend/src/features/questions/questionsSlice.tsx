@@ -1,7 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { AppThunk, RootState } from "../../app/store";
-import type { Question as QuestionDB, SubmitResult } from "../../api_types";
+import type {
+  Question as QuestionDB,
+  SubmitRequest,
+  SubmitResult,
+} from "../../api_types";
 
 export const GradeAnswerEnum = {
   Never: "Never",
@@ -334,17 +338,17 @@ export const submitAnswers = (): AppThunk => {
     const allQuestions = Object.values(state.questions.questionsById);
 
     // Convert answers to backend format
+    const gradeToNumber = {
+      [GradeAnswerEnum.Never]: 0,
+      [GradeAnswerEnum.NoDesire]: 1,
+      [GradeAnswerEnum.Maybe]: 2,
+      [GradeAnswerEnum.Yes]: 3,
+      [GradeAnswerEnum.Need]: 4,
+    };
     const answers = allQuestions
       .filter((q) => q.answer !== null)
       .map((q) => {
         const answer = q.answer!;
-        const gradeToNumber = {
-          [GradeAnswerEnum.Never]: 0,
-          [GradeAnswerEnum.NoDesire]: 1,
-          [GradeAnswerEnum.Maybe]: 2,
-          [GradeAnswerEnum.Yes]: 3,
-          [GradeAnswerEnum.Need]: 4,
-        };
 
         const result: {
           question_id: number;
@@ -362,6 +366,11 @@ export const submitAnswers = (): AppThunk => {
         return result;
       });
 
+    const requestBody: SubmitRequest = { answers };
+    if (location.pathname !== "/") {
+      requestBody.partner_id = location.pathname.slice(1);
+    }
+
     try {
       dispatch(submitStarted());
 
@@ -372,7 +381,7 @@ export const submitAnswers = (): AppThunk => {
           ...BACKEND_REQUEST_OPTIONS.headers,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify(requestBody),
       };
 
       const response = await fetch(

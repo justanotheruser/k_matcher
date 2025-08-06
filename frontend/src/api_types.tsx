@@ -9,6 +9,15 @@ interface QuestionCategory {
   name: string;
 }
 
+interface SubmitRequest {
+  answers: {
+    question_id: number;
+    answer: number;
+    if_forced?: boolean;
+  }[];
+  partner_id?: string;
+}
+
 interface SubmitResult {
   id: string;
 }
