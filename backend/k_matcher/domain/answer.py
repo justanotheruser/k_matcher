@@ -1,14 +1,12 @@
-from enum import Enum
-
 from pydantic import BaseModel
 
+from k_matcher.domain.enums import AnswerEnum
 
-class AnswerEnum(Enum):
-    NEVER = 0
-    NO_DESIRE = 1
-    MAYBE = 2
-    YES = 3
-    NEED = 4
+
+class AnswerBase:
+    question_id: int
+    answer: AnswerEnum
+    if_forced: bool
 
 
 class Answer(BaseModel):
@@ -24,3 +22,7 @@ class Answer(BaseModel):
         if not isinstance(other, Answer):
             return NotImplemented
         return self.answer.value < other.answer.value
+
+    @staticmethod
+    def from_answer_base(answer_base: AnswerBase) -> 'Answer':
+        return Answer(answer=answer_base.answer, if_forced=answer_base.if_forced)

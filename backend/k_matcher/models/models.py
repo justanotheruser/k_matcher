@@ -5,7 +5,9 @@ from typing import ClassVar
 from pydantic import BaseModel
 from sqlmodel import Column, Field, PrimaryKeyConstraint, Relationship, SQLModel, text
 
-from k_matcher.domain.answer import AnswerEnum
+from k_matcher.domain.answer import AnswerBase
+from k_matcher.domain.enums import AnswerEnum
+from k_matcher.domain.question_result import MatchList
 from k_matcher.models.helpers import IntEnum
 
 
@@ -27,12 +29,16 @@ class Result(SQLModel, table=True):
     created_at: datetime.datetime = Field(
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")}
     )
-    # answers: list["Answer"] = Relationship(back_populates="result", cascade_delete=True)
+    matching_result: str | None = None
+    answers: list["Answer"] = Relationship(back_populates="result", cascade_delete=True)
+
 
 class ResultPublic(BaseModel):
     id: str
+    matching_result: MatchList | None = None
 
-class Answer(SQLModel, table=True):
+
+class Answer(AnswerBase, SQLModel, table=True):
     __table_args__ = (PrimaryKeyConstraint('result_id', 'question_id'),)
     result_id: uuid.UUID = Field(foreign_key="result.id", ondelete="CASCADE")
     question_id: int = Field(foreign_key="question.id")
@@ -40,9 +46,10 @@ class Answer(SQLModel, table=True):
         sa_column=Column(name="answer", nullable=False, type_=IntEnum(AnswerEnum))
     )
     if_forced: bool = Field(default=False, nullable=False)
+    result: "Result" = Relationship(back_populates="answers")
 
 
-class AnswerCreate(BaseModel):
+class AnswerCreate(AnswerBase, BaseModel):
     question_id: int
     answer: AnswerEnum
     if_forced: bool = False
@@ -50,3 +57,4 @@ class AnswerCreate(BaseModel):
 
 class ResultCreate(BaseModel):
     answers: list[AnswerCreate]
+    partner_id: str | None = None

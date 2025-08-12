@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -8,6 +9,7 @@ from sqlmodel import Session, column, select
 
 from k_matcher.config import config
 from k_matcher.database import create_db_and_tables, engine, get_session
+from k_matcher.domain.question_result import get_match
 from k_matcher.models.models import (
     Answer,
     Question,
@@ -41,7 +43,33 @@ async def get_question_categories(*, session: Session = Depends(get_session)):
 
 
 @app.post("/result")
-async def post_result(*, request: ResultCreate, session: Session = Depends(get_session)) -> ResultPublic:
+async def post_result(
+    *, request: ResultCreate, session: Session = Depends(get_session)
+) -> ResultPublic:
+    if request.partner_id:
+        partner_result = session.get(Result, uuid.UUID(request.partner_id))
+        if not partner_result:
+            raise HTTPException(status_code=404, detail="Result not found")
+        return match_results(session, request, partner_result)
+
+    return create_result(session, request)
+
+
+def match_results(session: Session, result: ResultCreate, partner_result: Result) -> ResultPublic:
+    question_ids = set(answer.question_id for answer in result.answers)
+    partner_question_ids = set(answer.question_id for answer in partner_result.answers)
+    if question_ids != partner_question_ids:
+        raise HTTPException(status_code=400, detail="Question IDs do not match")
+
+    match = get_match(partner_result.answers, result.answers, question_ids)
+    partner_result.matching_result = match.model_dump_json()
+    session.add(partner_result)
+    session.commit()
+    session.refresh(partner_result)
+    return ResultPublic(id=str(partner_result.id), matching_result=match)
+
+
+def create_result(session: Session, request: ResultCreate) -> ResultPublic:
     try:
         result = Result(created_at=datetime.datetime.now())
         session.add(result)
