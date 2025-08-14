@@ -129,6 +129,13 @@ export const questionsSlice = createSlice({
         }
       }
 
+      // Check if questions for all categories are loaded
+      const allCategoriesLoaded = state.questionCategories.every(
+        (c) => c.id in state.questionsByCategoryId
+      );
+      if (!allCategoriesLoaded) {
+        return;
+      }
       // Check if all questions have answers
       const allQuestions = Object.values(state.questionsById);
       const allQuestionsAnswered =
