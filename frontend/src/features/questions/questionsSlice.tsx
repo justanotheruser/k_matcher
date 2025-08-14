@@ -111,6 +111,7 @@ export const questionsSlice = createSlice({
       questions.forEach((q) => {
         state.questionsById[q.id] = q;
       });
+      showSubmitButtonIfAllQuestionsAnswered(state);
     },
     answerSelected: (state, action: PayloadAction<QuestionAnswerAction>) => {
       console.log(`answerSelected, action=${JSON.stringify(action.payload)}`);
@@ -128,20 +129,7 @@ export const questionsSlice = createSlice({
           question.answer = answer;
         }
       }
-
-      // Check if questions for all categories are loaded
-      const allCategoriesLoaded = state.questionCategories.every(
-        (c) => c.id in state.questionsByCategoryId
-      );
-      if (!allCategoriesLoaded) {
-        return;
-      }
-      // Check if all questions have answers
-      const allQuestions = Object.values(state.questionsById);
-      const allQuestionsAnswered =
-        allQuestions.length > 0 && allQuestions.every((q) => q.answer !== null);
-
-      state.showSubmitButton = allQuestionsAnswered;
+      showSubmitButtonIfAllQuestionsAnswered(state);
     },
     setCategory: (state, action: PayloadAction<QuestionCategory>) => {
       state.currentPageCategory = action.payload;
@@ -170,6 +158,22 @@ export const questionsSlice = createSlice({
     },
   },
 });
+
+function showSubmitButtonIfAllQuestionsAnswered(state: QuestionnaireState) {
+  // Check if questions for all categories are loaded
+  const allCategoriesLoaded = state.questionCategories.every(
+    (c) => c.id in state.questionsByCategoryId
+  );
+  if (!allCategoriesLoaded) {
+    return;
+  }
+  // Check if all questions have answers
+  const allQuestions = Object.values(state.questionsById);
+  const allQuestionsAnswered =
+    allQuestions.length > 0 && allQuestions.every((q) => q.answer !== null);
+
+  state.showSubmitButton = allQuestionsAnswered;
+}
 
 export const {
   loadingStarted,
@@ -296,8 +300,6 @@ export const showQuestionsForCategoryId = (categoryId: number): AppThunk => {
         }
         questions.push(question);
       });
-
-      console.log(`result=${JSON.stringify(questions)}`);
       dispatch(questionsLoaded({ categoryId, questions }));
     } catch (error) {
       dispatch(errorHappened(`Failed to fetch questions: ${error}`));
