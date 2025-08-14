@@ -366,6 +366,10 @@ export const submitAnswers = (): AppThunk => {
 
       if (response.ok) {
         const data: SubmitResult = await response.json();
+        // If there are matching results, redirect to the results page
+        if (data.matching_result && data.matching_result.length > 0) {
+          window.location.href = `/${data.id}`;
+        }
         dispatch(submitSuccess(data));
       } else if (response.status === 400) {
         dispatch(submitError("Something went wrong"));

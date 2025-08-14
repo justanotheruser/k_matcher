@@ -1,10 +1,9 @@
 import { useEffect, useState, type JSX } from "react";
 import { useParams, Navigate } from "react-router-dom";
-import type { SubmitResult } from "../../api_types";
+import type { SubmitResult, Question } from "../../api_types";
 import Spinner from "../../components/Spinner";
 import Questionnaire from "../questions/Questionnaire";
 import { numberToAnswerGrade, GradeAnswerEnum } from "../../common_types";
-import type { Question } from "../../api_types";
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 
