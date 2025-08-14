@@ -2,19 +2,20 @@ import { useState } from "react";
 import { useAppDispatch } from "../../app/hooks";
 
 import QuestionButton from "./QuestionButton";
-import type { Answer, GradeAnswer } from "./questionsSlice";
-import { GRADE_ANSWERS, answerSelected } from "./questionsSlice";
-
+import { answerSelected, type Answer } from "./questionsSlice";
+import { GRADE_ANSWERS, type GradeAnswer } from "../../common_types";
 
 interface QuestionProps {
-  questionId: number
-  categoryId: number
-  text: string
-  answer: Answer | null
+  questionId: number;
+  categoryId: number;
+  text: string;
+  answer: Answer | null;
 }
 
 function Question(props: QuestionProps) {
-  const [gradeAnswer, setGradeAnswer] = useState<GradeAnswer | null>(() => props.answer ? props.answer.grade : null);
+  const [gradeAnswer, setGradeAnswer] = useState<GradeAnswer | null>(() =>
+    props.answer ? props.answer.grade : null
+  );
   const dispatch = useAppDispatch();
 
   return (

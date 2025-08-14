@@ -2,7 +2,7 @@ import { useAppDispatch } from "../../app/hooks";
 import type { RootState } from "../../app/store";
 import { useSelector } from "react-redux";
 
-import { setCategory } from "../questions/questionsSlice";
+import { setCategory } from "./questionsSlice";
 import type { QuestionCategory } from "../../api_types";
 
 export function Navigation() {

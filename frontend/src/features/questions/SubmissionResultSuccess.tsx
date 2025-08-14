@@ -1,5 +1,5 @@
-import { useAppSelector } from "../app/hooks";
-import { selectSubmissionResult } from "../features/questions/questionsSlice";
+import { useAppSelector } from "../../app/hooks";
+import { selectSubmissionResult } from "./questionsSlice";
 
 const SubmissionResultSuccess = () => {
   const submissionResult = useAppSelector(selectSubmissionResult);

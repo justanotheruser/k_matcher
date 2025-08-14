@@ -18,7 +18,21 @@ interface SubmitRequest {
   partner_id?: string;
 }
 
+interface Answer {
+  answer: number;
+  if_forced: boolean;
+}
+
 interface SubmitResult {
   id: string;
+  matching_result?: {
+    min_answer: number;
+    matches: {
+      question_id: number;
+      answer_a: Answer;
+      answer_b: Answer;
+    }[];
+  }[];
 }
-export type { Question, QuestionCategory, SubmitResult };
+
+export type { Question, QuestionCategory, SubmitRequest, SubmitResult };

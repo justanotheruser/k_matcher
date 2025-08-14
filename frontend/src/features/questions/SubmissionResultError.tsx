@@ -1,5 +1,5 @@
-import { useAppSelector } from "../app/hooks";
-import { selectSubmissionErrorMessage } from "../features/questions/questionsSlice";
+import { useAppSelector } from "../../app/hooks";
+import { selectSubmissionErrorMessage } from "./questionsSlice";
 
 const SubmissionResultError = () => {
   const submissionErrorMessage = useAppSelector(selectSubmissionErrorMessage);

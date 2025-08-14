@@ -1,8 +1,8 @@
-import { useAppSelector } from "../app/hooks";
+import { useAppSelector } from "../../app/hooks";
 import {
   selectSubmissionResult,
   selectSubmissionSuccess,
-} from "../features/questions/questionsSlice";
+} from "./questionsSlice";
 import SubmissionResultSuccess from "./SubmissionResultSuccess";
 import SubmissionResultError from "./SubmissionResultError";
 

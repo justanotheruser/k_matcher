@@ -1,28 +1,11 @@
-import { createSlice } from "@reduxjs/toolkit";
-import type { PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppThunk, RootState } from "../../app/store";
 import type {
   Question as QuestionDB,
   SubmitRequest,
   SubmitResult,
 } from "../../api_types";
-
-export const GradeAnswerEnum = {
-  Never: "Never",
-  NoDesire: "No desire",
-  Maybe: "Maybe",
-  Yes: "Yes",
-  Need: "Need",
-} as const;
-export type GradeAnswer =
-  (typeof GradeAnswerEnum)[keyof typeof GradeAnswerEnum];
-export const GRADE_ANSWERS = [
-  GradeAnswerEnum.Never,
-  GradeAnswerEnum.NoDesire,
-  GradeAnswerEnum.Maybe,
-  GradeAnswerEnum.Yes,
-  GradeAnswerEnum.Need,
-];
+import { type GradeAnswer, answerGradeToNumber } from "../../common_types";
 
 export interface Answer {
   grade: GradeAnswer;
@@ -337,14 +320,6 @@ export const submitAnswers = (): AppThunk => {
     const state = getState();
     const allQuestions = Object.values(state.questions.questionsById);
 
-    // Convert answers to backend format
-    const gradeToNumber = {
-      [GradeAnswerEnum.Never]: 0,
-      [GradeAnswerEnum.NoDesire]: 1,
-      [GradeAnswerEnum.Maybe]: 2,
-      [GradeAnswerEnum.Yes]: 3,
-      [GradeAnswerEnum.Need]: 4,
-    };
     const answers = allQuestions
       .filter((q) => q.answer !== null)
       .map((q) => {
@@ -356,7 +331,7 @@ export const submitAnswers = (): AppThunk => {
           if_forced?: boolean;
         } = {
           question_id: q.id,
-          answer: gradeToNumber[answer.grade],
+          answer: answerGradeToNumber[answer.grade],
         };
 
         if (answer.ifForced) {
@@ -385,7 +360,7 @@ export const submitAnswers = (): AppThunk => {
       };
 
       const response = await fetch(
-        `${BACKEND_BASE_URL}/result`,
+        `${BACKEND_BASE_URL}/results`,
         request_options
       );
 

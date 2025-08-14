@@ -2,6 +2,7 @@ import datetime
 import uuid
 from contextlib import asynccontextmanager
 
+import pydantic_core
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
@@ -9,7 +10,7 @@ from sqlmodel import Session, column, select
 
 from k_matcher.config import config
 from k_matcher.database import create_db_and_tables, engine, get_session
-from k_matcher.domain.question_result import get_match
+from k_matcher.domain.question_result import MatchList, get_match
 from k_matcher.models.models import (
     Answer,
     Question,
@@ -42,8 +43,8 @@ async def get_question_categories(*, session: Session = Depends(get_session)):
     return session.exec(select(QuestionCategory)).all()
 
 
-@app.post("/result")
-async def post_result(
+@app.post("/results")
+async def post_results(
     *, request: ResultCreate, session: Session = Depends(get_session)
 ) -> ResultPublic:
     if request.partner_id:
@@ -53,6 +54,20 @@ async def post_result(
         return match_results(session, request, partner_result)
 
     return create_result(session, request)
+
+
+@app.get("/results/{result_id}")
+async def get_results(
+    result_id: uuid.UUID, session: Session = Depends(get_session)
+) -> ResultPublic:
+    result = session.get(Result, result_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+    if result.matching_result:
+        match_list = MatchList.model_validate(pydantic_core.from_json(result.matching_result))
+    else:
+        match_list = None
+    return ResultPublic(id=str(result_id), matching_result=match_list)
 
 
 def match_results(session: Session, result: ResultCreate, partner_result: Result) -> ResultPublic:
