@@ -110,61 +110,63 @@ export default function ResultView() {
         </h1>
 
         <div className="bg-gray-800/50 border border-gray-600 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-700/50">
-                <th className="text-center px-6 py-4 text-gray-300 font-semibold">
-                  Question
-                </th>
-                <th className="text-center px-6 py-4 text-gray-300 font-semibold">
-                  Answers A
-                </th>
-                <th className="text-center px-6 py-4 text-gray-300 font-semibold">
-                  Answers B
-                </th>
-                <th className="text-center px-6 py-4 text-gray-300 font-semibold">
-                  Min answer
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.matching_result.map((matchGroup, groupIndex) =>
-                matchGroup.matches.map((match, matchIndex) => (
-                  <tr
-                    key={`${groupIndex}-${matchIndex}`}
-                    className={`border-t border-gray-600 ${
-                      (groupIndex + matchIndex) % 2 === 0
-                        ? "bg-gray-800/30"
-                        : "bg-gray-800/50"
-                    }`}
-                  >
-                    <td className="px-6 py-4 text-gray-300">
-                      {getQuestionText(match.question_id)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-300">
-                      {getAnswerText(match.answer_a.answer)}
-                      {match.answer_a.if_forced && (
-                        <span className="ml-2 text-xs text-yellow-400">
-                          (forced)
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-300">
-                      {getAnswerText(match.answer_b.answer)}
-                      {match.answer_b.if_forced && (
-                        <span className="ml-2 text-xs text-yellow-400">
-                          (forced)
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {getMatchScore(matchGroup.min_answer)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="overflow-y-auto max-h-96">
+            <table className="w-full">
+              <thead className="sticky top-0 z-10 bg-gray-800">
+                <tr className="bg-gray-700/50">
+                  <th className="text-center px-6 py-4 text-gray-300 font-semibold">
+                    Question
+                  </th>
+                  <th className="text-center px-6 py-4 text-gray-300 font-semibold">
+                    Answers A
+                  </th>
+                  <th className="text-center px-6 py-4 text-gray-300 font-semibold">
+                    Answers B
+                  </th>
+                  <th className="text-center px-6 py-4 text-gray-300 font-semibold">
+                    Min answer
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.matching_result.map((matchGroup, groupIndex) =>
+                  matchGroup.matches.map((match, matchIndex) => (
+                    <tr
+                      key={`${groupIndex}-${matchIndex}`}
+                      className={`border-t border-gray-600 ${
+                        (groupIndex + matchIndex) % 2 === 0
+                          ? "bg-gray-800/30"
+                          : "bg-gray-800/50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 text-gray-300">
+                        {getQuestionText(match.question_id)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-300">
+                        {getAnswerText(match.answer_a.answer)}
+                        {match.answer_a.if_forced && (
+                          <span className="ml-2 text-xs text-yellow-400">
+                            (forced)
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-gray-300">
+                        {getAnswerText(match.answer_b.answer)}
+                        {match.answer_b.if_forced && (
+                          <span className="ml-2 text-xs text-yellow-400">
+                            (forced)
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {getMatchScore(matchGroup.min_answer)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
